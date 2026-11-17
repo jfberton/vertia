@@ -1,36 +1,22 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vertia
 
-## Getting Started
+**Vertia** es una plataforma SaaS moderna, serverless y colaborativa de gestión de almacenes e inventarios (WMS / Stock Control) y red colaborativa B2B de stock inter-empresas.
 
-First, run the development server:
+## 🚀 Stack Tecnológico
+- **Frontend / Fullstack**: Next.js 15 (App Router), TypeScript, Tailwind CSS, Shadcn UI, Lucide Icons.
+- **Despliegue Serverless**: Cloudflare Pages / Workers ($0 costo de mantenimiento de VPS).
+- **Base de Datos & Auth**: Supabase (PostgreSQL con Row Level Security multi-tenant nativo).
+- **Storage**: Supabase Storage (Buckets S3-compatible).
 
+## 📦 Características Principales
+1. **Multi-Tenancy con Aislamiento Estricto (RLS)**: Cada empresa gestiona sus propios almacenes, productos y stock de forma 100% aislada.
+2. **Matriz Espacial 3D**: Ubicaciones físicas por Pasillo, Rack, Estantería, Nivel y Caja con trazabilidad por lote.
+3. **Flujo de Picking Desacoplado**: Surtido de pedidos limpio hacia remisión de despacho.
+4. **Red Colaborativa B2B**: Consulta y negociación de faltantes (BackOrders) y excedentes de stock entre empresas adheridas.
+
+## 💻 Desarrollo Local
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador.

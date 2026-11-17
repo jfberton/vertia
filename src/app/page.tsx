@@ -19,12 +19,12 @@ export default function Home() {
       <header className="h-20 border-b border-zinc-800/80 px-8 flex items-center justify-between max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20 text-lg">
-            IT
+            V
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-xl tracking-tight text-white">InvenTrack</span>
+            <span className="font-extrabold text-xl tracking-tight text-white">Vertia</span>
             <Badge variant="secondary" className="bg-indigo-950 text-indigo-400 border border-indigo-800 text-[11px]">
-              v2 SaaS
+              SaaS
             </Badge>
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-900 py-8 text-center text-xs text-zinc-400">
-        <p>InvenTrack v2 • Sistema de Gestión de Almacenes e Inventarios • 2026</p>
+        <p>Vertia • Plataforma Inteligente de Gestión de Almacenes & Red Colaborativa B2B • 2026</p>
       </footer>
     </div>
   );

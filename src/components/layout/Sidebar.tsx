@@ -44,12 +44,12 @@ export function Sidebar() {
       {/* Brand Header */}
       <div className="h-16 flex items-center px-5 border-b border-zinc-800 gap-2.5">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-md">
-          IT
+          V
         </div>
         <div>
-          <span className="font-bold text-zinc-100 tracking-tight text-base">InvenTrack</span>
+          <span className="font-bold text-zinc-100 tracking-tight text-base">Vertia</span>
           <span className="ml-1.5 text-xs font-semibold px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800">
-            v2 SaaS
+            SaaS
           </span>
         </div>
       </div>
