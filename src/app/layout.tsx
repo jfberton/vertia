@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vertia - Gestión de Almacenes & Red Colaborativa B2B",
-  description: "Plataforma SaaS serverless de gestión de inventarios, picking y marketplace B2B de stock.",
+  title: "VERTIA - Plataforma Operativa para Construcciones, Proyectos e Inmuebles",
+  description: "Conecta clientes, contratistas y corralones para gestionar solicitudes, stock, ejecución, evidencias y cierre de operaciones.",
 };
 
 export default function RootLayout({
@@ -23,9 +23,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-100`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900 selection:bg-indigo-600 selection:text-white`}
       >
         {children}
       </body>

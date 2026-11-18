@@ -10,8 +10,10 @@ import {
   CheckCircle2,
   Search,
   Filter,
+  Navigation,
+  Compass,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -31,9 +33,9 @@ interface MockAlmacen {
 const mockAlmacenes: MockAlmacen[] = [
   {
     id: "alm-1",
-    nombre: "Almacén Central A1",
+    nombre: "Galpón Central - Corralón Los Pinos",
     direccion: "Av. Circunvalación 4500, Rosario",
-    radio_cobertura_km: 35,
+    radio_cobertura_km: 25,
     coordenadas_gps: "-32.9511, -60.6663",
     capacidad_maxima: 5000,
     es_zona_recepcion: false,
@@ -42,8 +44,8 @@ const mockAlmacenes: MockAlmacen[] = [
   },
   {
     id: "alm-2",
-    nombre: "Muelle de Recepción & Staging",
-    direccion: "Muelle 02 - Portón Norte",
+    nombre: "Zona de Recepción / Pulmón General",
+    direccion: "Portón Norte - Descarga Camiones",
     radio_cobertura_km: 10,
     coordenadas_gps: "-32.9480, -60.6620",
     capacidad_maxima: 1000,
@@ -53,14 +55,14 @@ const mockAlmacenes: MockAlmacen[] = [
   },
   {
     id: "alm-3",
-    nombre: "Depósito Córdoba",
-    direccion: "Ruta 9 Km 680, Córdoba",
-    radio_cobertura_km: 50,
-    coordenadas_gps: "-31.4201, -64.1888",
+    nombre: "Sucursal Sur & Patio de Áridos",
+    direccion: "Ruta 9 Km 280, Alvear",
+    radio_cobertura_km: 40,
+    coordenadas_gps: "-33.0201, -60.6188",
     capacidad_maxima: 3500,
     es_zona_recepcion: false,
     total_ubicaciones: 180,
-    ocupacion_porcentaje: 88,
+    ocupacion_porcentaje: 82,
   },
 ];
 
@@ -78,188 +80,277 @@ interface MockUbicacion {
 }
 
 const mockUbicaciones: MockUbicacion[] = [
-  { id: "u-1", codigo_visual: "F01-R01-E01-N1", fila: 1, rack: 1, estanteria: 1, nivel: 1, producto_actual: "Rodamiento SKF 6204", cantidad: 120, lote: "L-2026-A", estado: "ocupado" },
-  { id: "u-2", codigo_visual: "F01-R01-E01-N2", fila: 1, rack: 1, estanteria: 1, nivel: 2, producto_actual: "Rodamiento SKF 6205", cantidad: 80, lote: "L-2026-B", estado: "ocupado" },
-  { id: "u-3", codigo_visual: "F01-R01-E01-N3", fila: 1, rack: 1, estanteria: 1, nivel: 3, producto_actual: null, cantidad: 0, estado: "vacio" },
-  { id: "u-4", codigo_visual: "F01-R01-E02-N1", fila: 1, rack: 1, estanteria: 2, nivel: 1, producto_actual: "Correa Dentada HTD 8M", cantidad: 300, lote: "L-2025-Z", estado: "completo" },
-  { id: "u-5", codigo_visual: "F01-R01-E02-N2", fila: 1, rack: 1, estanteria: 2, nivel: 2, producto_actual: null, cantidad: 0, estado: "vacio" },
-  { id: "u-6", codigo_visual: "F01-R02-E01-N1", fila: 1, rack: 2, estanteria: 1, nivel: 1, producto_actual: "Filtro de Aceite Industrial", cantidad: 45, lote: "L-2026-C", estado: "ocupado" },
-  { id: "u-7", codigo_visual: "F01-R02-E01-N2", fila: 1, rack: 2, estanteria: 1, nivel: 2, producto_actual: null, cantidad: 0, estado: "vacio" },
-  { id: "u-8", codigo_visual: "F01-R02-E01-N3", fila: 1, rack: 2, estanteria: 1, nivel: 3, producto_actual: null, cantidad: 0, estado: "vacio" },
+  {
+    id: "u-1",
+    codigo_visual: "F01-R01-E01-N1",
+    fila: 1,
+    rack: 1,
+    estanteria: 1,
+    nivel: 1,
+    producto_actual: "Cemento Loma Negra 50kg",
+    cantidad: 120,
+    lote: "L-2026-A",
+    estado: "completo",
+  },
+  {
+    id: "u-2",
+    codigo_visual: "F01-R01-E01-N2",
+    fila: 1,
+    rack: 1,
+    estanteria: 1,
+    nivel: 2,
+    producto_actual: "Cal Hidráulica Santa Elena 25kg",
+    cantidad: 80,
+    lote: "L-2026-B",
+    estado: "ocupado",
+  },
+  {
+    id: "u-3",
+    codigo_visual: "F01-R01-E01-N3",
+    fila: 1,
+    rack: 1,
+    estanteria: 1,
+    nivel: 3,
+    producto_actual: null,
+    estado: "vacio",
+  },
+  {
+    id: "u-4",
+    codigo_visual: "F01-R01-E02-N1",
+    fila: 1,
+    rack: 1,
+    estanteria: 2,
+    nivel: 1,
+    producto_actual: "Hierro Nervado Ø 10mm (Barra 12m)",
+    cantidad: 250,
+    lote: "L-2025-Z",
+    estado: "completo",
+  },
+  {
+    id: "u-5",
+    codigo_visual: "F01-R01-E02-N2",
+    fila: 1,
+    rack: 1,
+    estanteria: 2,
+    nivel: 2,
+    producto_actual: null,
+    estado: "vacio",
+  },
+  {
+    id: "u-6",
+    codigo_visual: "F01-R01-E02-N3",
+    fila: 1,
+    rack: 1,
+    estanteria: 2,
+    nivel: 3,
+    producto_actual: null,
+    estado: "vacio",
+  },
 ];
 
 export default function AlmacenesPage() {
-  const [almacenSeleccionado, setAlmacenSeleccionado] = useState(mockAlmacenes[0].id);
-  const [filtroTexto, setFiltroTexto] = useState("");
-  const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
-
-  const ubicacionesFiltradas = mockUbicaciones.filter((u) =>
-    u.codigo_visual.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-    (u.producto_actual && u.producto_actual.toLowerCase().includes(filtroTexto.toLowerCase()))
-  );
+  const [almacenes] = useState<MockAlmacen[]>(mockAlmacenes);
+  const [almacenSeleccionado, setAlmacenSeleccionado] = useState<MockAlmacen>(mockAlmacenes[0]);
+  const [ubicacionSeleccionada, setUbicacionSeleccionada] = useState<MockUbicacion | null>(mockUbicaciones[0]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-zinc-800">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Warehouse className="w-6 h-6 text-indigo-400" />
-            Almacenes & Matriz de Ubicaciones 3D
-          </h1>
-          <p className="text-sm text-zinc-400">
-            Organiza tus depósitos, muelles de recepción y consulta el mapa físico de estanterías.
-          </p>
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700">
+              <Warehouse className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">
+                Almacenes, Matriz Espacial 3D & Radio de Cobertura
+              </h1>
+              <p className="text-xs text-slate-500">
+                Visualización espacial de racks/niveles y configuración de alcance de flete logístico para la red VERTIA.
+              </p>
+            </div>
+          </div>
         </div>
-        <Button onClick={() => setMostrarModalNuevo(true)} className="bg-indigo-600 hover:bg-indigo-700">
+        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">
           <Plus className="w-4 h-4 mr-1.5" />
-          Nuevo Almacén
+          Nuevo Almacén / Galpón
         </Button>
       </div>
 
-      {/* Almacenes Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {mockAlmacenes.map((alm) => {
-          const isSelected = alm.id === almacenSeleccionado;
-
+      {/* Selector de Almacenes (Tarjetas) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {almacenes.map((alm) => {
+          const esActivo = alm.id === almacenSeleccionado.id;
           return (
-            <div
+            <button
               key={alm.id}
-              onClick={() => setAlmacenSeleccionado(alm.id)}
-              className={`p-5 rounded-xl border cursor-pointer transition-all ${
-                isSelected
-                  ? "bg-zinc-900 border-indigo-500 shadow-lg shadow-indigo-500/10"
-                  : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-700"
+              onClick={() => setAlmacenSeleccionado(alm)}
+              className={`p-4 rounded-xl text-left border transition-all ${
+                esActivo
+                  ? "bg-white border-indigo-600 ring-2 ring-indigo-600/10 shadow-sm"
+                  : "bg-white border-slate-200 hover:border-slate-300 shadow-2xs"
               }`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className={`p-2 rounded-lg ${alm.es_zona_recepcion ? "bg-amber-950 text-amber-400" : "bg-indigo-950 text-indigo-400"}`}>
-                    <Warehouse className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm text-white">{alm.nombre}</h3>
-                    <div className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3 h-3 text-zinc-500" />
-                      {alm.direccion}
-                    </div>
-                    <div className="text-[10px] text-indigo-400 font-mono mt-1 flex items-center gap-2">
-                      <span>GPS: {alm.coordenadas_gps}</span>
-                      <span>• Radio flete: {alm.radio_cobertura_km} km</span>
-                    </div>
-                  </div>
-                </div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-bold text-slate-900 text-xs">{alm.nombre}</span>
                 {alm.es_zona_recepcion && (
-                  <Badge variant="warning" className="text-[10px]">
-                    Recepción / Muelle
+                  <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px]">
+                    Zona Recepción
                   </Badge>
                 )}
               </div>
-
-              {/* Capacidad Progress */}
-              <div className="space-y-1.5 mt-4 pt-3 border-t border-zinc-800/80">
-                <div className="flex justify-between text-xs text-zinc-400">
-                  <span>Capacidad ocupada</span>
-                  <span className="font-medium text-zinc-200">{alm.ocupacion_porcentaje}%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      alm.ocupacion_porcentaje > 85
-                        ? "bg-amber-500"
-                        : "bg-indigo-500"
-                    }`}
-                    style={{ width: `${alm.ocupacion_porcentaje}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-[11px] text-zinc-500 mt-1">
-                  <span>{alm.total_ubicaciones} posiciones 3D</span>
-                  <span>Máx: {alm.capacidad_maxima} u.</span>
-                </div>
+              <div className="flex items-center gap-1.5 text-slate-500 text-[11px] mb-2">
+                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="line-clamp-1">{alm.direccion}</span>
               </div>
-            </div>
+              <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100">
+                <span className="text-indigo-600 font-semibold flex items-center gap-1">
+                  <Compass className="w-3 h-3" /> Radio: {alm.radio_cobertura_km} km
+                </span>
+                <span className="font-bold text-slate-700">
+                  {alm.ocupacion_porcentaje}% ocupación
+                </span>
+              </div>
+            </button>
           );
         })}
       </div>
 
-      {/* Explorador de Ubicaciones 3D */}
-      <Card className="bg-zinc-900 border-zinc-800 text-zinc-100">
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4">
-          <div>
-            <CardTitle className="text-base text-white flex items-center gap-2">
-              <Layers className="w-4 h-4 text-indigo-400" />
-              Matriz Espacial de Ubicaciones Físicas
-            </CardTitle>
-            <CardDescription className="text-zinc-400">
-              Coordenadas de almacenamiento (Pasillo • Rack • Estantería • Nivel)
-            </CardDescription>
-          </div>
-
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-              <Input
-                type="text"
-                value={filtroTexto}
-                onChange={(e) => setFiltroTexto(e.target.value)}
-                placeholder="Filtrar por código o producto..."
-                className="pl-9 h-9 text-xs bg-zinc-950 border-zinc-800"
-              />
+      {/* Grid: Matriz 3D y Detalle */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Matriz 3D (8 columnas) */}
+        <div className="lg:col-span-8 space-y-4">
+          <Card className="bg-white border-slate-200 shadow-sm p-5 rounded-xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Matriz Espacial Nativa
+                </span>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {almacenSeleccionado.nombre} — Sector Racks Principales
+                </h3>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="flex items-center gap-1 text-slate-500">
+                  <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500"></span> Completo
+                </span>
+                <span className="flex items-center gap-1 text-slate-500">
+                  <span className="w-2.5 h-2.5 rounded-xs bg-amber-500"></span> Parcial
+                </span>
+                <span className="flex items-center gap-1 text-slate-500">
+                  <span className="w-2.5 h-2.5 rounded-xs border border-dashed border-slate-300"></span> Vacío
+                </span>
+              </div>
             </div>
-            <Button size="sm" variant="outline" className="border-zinc-800 text-xs shrink-0">
-              <Filter className="w-3.5 h-3.5 mr-1" />
-              Filtros
-            </Button>
-          </div>
-        </CardHeader>
 
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-            {ubicacionesFiltradas.map((u) => (
-              <div
-                key={u.id}
-                className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 hover:border-zinc-700 transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono text-xs font-bold text-indigo-300">
-                      {u.codigo_visual}
-                    </span>
-                    <Badge
-                      variant={
-                        u.estado === "completo"
-                          ? "default"
-                          : u.estado === "ocupado"
-                          ? "secondary"
-                          : "outline"
-                      }
-                      className="text-[10px]"
-                    >
-                      {u.estado === "vacio" ? "Disponible" : u.estado}
-                    </Badge>
+            {/* Representación visual de Racks y Niveles */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+              {mockUbicaciones.map((u) => {
+                const esActiva = u.id === ubicacionSeleccionada?.id;
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => setUbicacionSeleccionada(u)}
+                    className={`p-3 rounded-lg border text-left transition-all ${
+                      esActiva
+                        ? "border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/10 shadow-xs"
+                        : "border-slate-200 bg-slate-50/50 hover:bg-slate-100/70"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-mono text-xs font-bold text-slate-800">
+                        {u.codigo_visual}
+                      </span>
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          u.estado === "completo"
+                            ? "bg-emerald-500"
+                            : u.estado === "ocupado"
+                            ? "bg-amber-500"
+                            : "bg-slate-300"
+                        }`}
+                      ></span>
+                    </div>
+                    {u.producto_actual ? (
+                      <div>
+                        <div className="text-[11px] font-semibold text-slate-800 line-clamp-1">
+                          {u.producto_actual}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">
+                          {u.cantidad} unidades • {u.lote}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-400 italic">Posición disponible</div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+
+        {/* Ficha de Ubicación y Datos GPS (4 columnas) */}
+        <div className="lg:col-span-4 space-y-4">
+          <Card className="bg-white border-slate-200 shadow-sm p-4 rounded-xl space-y-4">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+                Detalle de Ubicación Seleccionada
+              </span>
+              <h3 className="text-sm font-bold text-slate-900 font-mono mt-0.5">
+                {ubicacionSeleccionada?.codigo_visual || "Selecciona una posición"}
+              </h3>
+            </div>
+
+            {ubicacionSeleccionada && (
+              <div className="space-y-3 text-xs">
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
+                  <div className="text-slate-500 text-[11px]">Mercadería Almacenada:</div>
+                  <div className="font-bold text-slate-900 text-sm">
+                    {ubicacionSeleccionada.producto_actual || "Ubicación libre"}
                   </div>
-
-                  <div className="text-xs text-zinc-300 font-medium line-clamp-1">
-                    {u.producto_actual || "Posición vacía"}
-                  </div>
-
-                  {u.producto_actual && (
-                    <div className="text-[11px] text-zinc-500 mt-1 flex items-center justify-between">
-                      <span>Lote: <strong className="text-zinc-400">{u.lote}</strong></span>
-                      <span className="text-emerald-400 font-semibold">{u.cantidad} u.</span>
+                  {ubicacionSeleccionada.cantidad && (
+                    <div className="text-slate-600 text-xs">
+                      Cantidad: <strong className="text-slate-900">{ubicacionSeleccionada.cantidad} bultos</strong>
+                    </div>
+                  )}
+                  {ubicacionSeleccionada.lote && (
+                    <div className="text-slate-500 text-[11px] font-mono">
+                      Lote: {ubicacionSeleccionada.lote}
                     </div>
                   )}
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-zinc-900 flex items-center justify-between text-[10px] text-zinc-500">
-                  <span>Fila {u.fila} • Rack {u.rack}</span>
-                  <span>Est. {u.estanteria} • Nivel {u.nivel}</span>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="p-2 rounded bg-slate-50 border border-slate-100">
+                    <span className="text-slate-400 block">Fila / Rack:</span>
+                    <span className="font-bold text-slate-700">
+                      F0{ubicacionSeleccionada.fila} • R0{ubicacionSeleccionada.rack}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded bg-slate-50 border border-slate-100">
+                    <span className="text-slate-400 block">Estantería / Nivel:</span>
+                    <span className="font-bold text-slate-700">
+                      E0{ubicacionSeleccionada.estanteria} • N{ubicacionSeleccionada.nivel}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 space-y-2">
+                  <span className="text-[11px] font-bold text-slate-800 block">
+                    Geolocalización & Radio de Entrega:
+                  </span>
+                  <div className="p-2.5 rounded-lg bg-indigo-50/50 border border-indigo-100 text-[11px] space-y-1 text-slate-600">
+                    <div>GPS: <span className="font-mono text-slate-800">{almacenSeleccionado.coordenadas_gps}</span></div>
+                    <div>Radio de flete: <strong className="text-indigo-700">{almacenSeleccionado.radio_cobertura_km} km a la redonda</strong></div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            )}
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
