@@ -38,6 +38,7 @@ export interface MultiTenantAlmacen {
   coordenadas_gps: string;
   capacidad_maxima: number;
   es_zona_recepcion: boolean;
+  es_zona_embarque?: boolean;
   total_ubicaciones: number;
   ocupacion_porcentaje: number;
   descripcion?: string;
@@ -243,6 +244,7 @@ export const MOCK_ALMACENES: MultiTenantAlmacen[] = [
     coordenadas_gps: "-32.9511, -60.6663",
     capacidad_maxima: 5000,
     es_zona_recepcion: false,
+    es_zona_embarque: false,
     total_ubicaciones: 240,
     ocupacion_porcentaje: 68,
     descripcion: "Galpón principal con estanterías multinivel, racks para cemento y cal, y zona de carga lateral.",
@@ -256,10 +258,26 @@ export const MOCK_ALMACENES: MultiTenantAlmacen[] = [
     coordenadas_gps: "-32.9490, -60.6650",
     capacidad_maxima: 1000,
     es_zona_recepcion: true,
+    es_zona_embarque: false,
     total_ubicaciones: 36,
     ocupacion_porcentaje: 30,
     descripcion: "Bahía de ingreso rápido para camiones tolva y control de albarán.",
   },
+  {
+    id: "alm-pinos-embarque",
+    tenant_id: "tenant-los-pinos",
+    nombre: "Muelle de Embarque y Expedición Oeste",
+    direccion: "Portón Sur 4, Av. Circunvalación 4500",
+    radio_cobertura_km: 25,
+    coordenadas_gps: "-32.9520, -60.6670",
+    capacidad_maxima: 800,
+    es_zona_recepcion: false,
+    es_zona_embarque: true,
+    total_ubicaciones: 24,
+    ocupacion_porcentaje: 45,
+    descripcion: "Dársenas de expedición, consolidación de remitos y carga pesada a camiones.",
+  },
+
 
   // Materiales del Centro S.A. (Rosario Centro, 40km radius)
   {
@@ -271,6 +289,7 @@ export const MOCK_ALMACENES: MultiTenantAlmacen[] = [
     coordenadas_gps: "-32.9602, -60.6558",
     capacidad_maxima: 6000,
     es_zona_recepcion: false,
+    es_zona_embarque: false,
     total_ubicaciones: 320,
     ocupacion_porcentaje: 72,
     descripcion: "Base logística urbana equipada con racks pesados para perfiles de acero, vigas y ladrillos.",
@@ -284,10 +303,26 @@ export const MOCK_ALMACENES: MultiTenantAlmacen[] = [
     coordenadas_gps: "-32.9590, -60.6540",
     capacidad_maxima: 1200,
     es_zona_recepcion: true,
+    es_zona_embarque: false,
     total_ubicaciones: 45,
     ocupacion_porcentaje: 35,
     descripcion: "Báscula y plataforma de descarga de mallas y perfiles pesados.",
   },
+  {
+    id: "alm-centro-embarque",
+    tenant_id: "tenant-materiales-centro",
+    nombre: "Muelle de Embarque Rosario Centro",
+    direccion: "Bv. Oroño 1890, Dársena Salida Rápida",
+    radio_cobertura_km: 40,
+    coordenadas_gps: "-32.9610, -60.6565",
+    capacidad_maxima: 1000,
+    es_zona_recepcion: false,
+    es_zona_embarque: true,
+    total_ubicaciones: 28,
+    ocupacion_porcentaje: 50,
+    descripcion: "Bahías de carga de pedidos pickeados y despacho en obra.",
+  },
+
 ];
 
 // ==========================================

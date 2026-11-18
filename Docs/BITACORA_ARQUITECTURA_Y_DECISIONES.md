@@ -48,14 +48,29 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 | :--- | :--- | :--- | :--- |
 | **0** | Configuración de entorno local, `.env.local` y pruebas base (32/32 tests) | ✅ Completado | Lead Architect |
 | **1** | Capa de Servicios Híbrida Supabase (`src/lib/services/`) con fallback a Mocks | ✅ Completado | Subagente Backend / Supabase |
-| **2** | Matriz Espacial 3D Interactiva de Almacenes (Racks, Niveles y Pulmón de Recepción) | ✅ Completado | Subagente Frontend UI |
-| **3** | Flujo de Picking, Transición de Dual Stock y Generador de Remitos PDF | ⚪ Pendiente | Subagente Logística |
+| **2** | Matriz Espacial 2D Industrial y Zona de Embarque (Staging) | ✅ Completado | Subagente Frontend UI |
+| **2.1** | Monitor de Conectividad Heartbeat y Protocolo de Reconciliación de Stock Offline | ✅ Completado | Subagente Backend |
+| **3** | Flujo de Picking, Transición de Dual Stock y Generador de Remitos PDF | 🟡 En Ejecución | Subagente Logística |
 | **4** | Uploader de Evidencias Fotográficas con Compresión en Cliente a Supabase Storage | ⚪ Pendiente | Subagente Media/Storage |
 | **5** | Red B2B: Negociación de Excedentes y Chat de Extensión en Tiempo Real | ⚪ Pendiente | Subagente Realtime |
 
 ---
 
 ## 📝 4. Registro Cronológico de Decisiones y Cambios
+
+### [2026-11-18] - Entrega de Paso 1 (Matriz 2D y Zona de Embarque) y Paso 2 (Monitor de Red y Reconciliación Offline)
+- **Autor / Agente:** Lead Architect (Antigravity), Subagente Frontend y Subagente Backend.
+- **Decisiones Técnicas y Entregables:**
+  1. **Matriz Espacial 2D Industrial y Pulmón de Salida (`almacenes/page.tsx`):**
+     - Se reemplazó la perspectiva 3D volumétrica por una cuadrícula 2D ágil (`WarehouseMatrix2D.tsx`) filtrable por Pasillos y Niveles N1, N2, N3 con código cromático de ocupación.
+     - Se creó el componente `WarehouseEmbarqueCard.tsx` para la **Zona de Embarque / Muelle de Expedición (Staging)**, con control de órdenes pickeadas en espera de flete y visualizador de remito.
+     - Se estructuró el galpón en sus 3 zonas operativas: Pulmón de Entrada (Recepción), Almacenamiento Activo (Racks 2D) y Pulmón de Salida (Embarque).
+  2. **Monitor de Red y Resiliencia Offline (`sync-monitor.service.ts` y `offline-queue.service.ts`):**
+     - Heartbeat periódico cada 15 segundos a Supabase y componente visual [`NetworkStatusBanner.tsx`](file:///d:/ATP/Berton/Documentos/Desarrollo/Trabajos/Vertia/src/components/layout/NetworkStatusBanner.tsx) integrado en la Navbar (🟢 Badge online y 🔴 Barra offline con cuenta regresiva).
+     - Cola de mutaciones fuera de línea con algoritmo de reconciliación: ante un quiebre de stock producido por operaciones simultáneas, bloquea la mutación a ciegas y la envía a la Bandeja de Conflictos para resolución por el Administrador (`autorizar_extension`, `ajuste_parcial` o `cancelar`).
+  3. **Control de Calidad:**
+     - Suite automatizada ampliada a **70 pruebas pasando al 100% (0 fallos)**.
+     - `next build` limpio con Turbopack.
 
 ### [2026-11-18] - Entrega de Fase 1 (Servicios Híbridos) y Fase 2 (Matriz Espacial 3D)
 - **Autor / Agente:** Lead Architect (Antigravity), Subagente Backend (`backend-engineer`) y Subagente Frontend (`frontend-engineer`).

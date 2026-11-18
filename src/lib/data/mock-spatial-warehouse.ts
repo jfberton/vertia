@@ -48,6 +48,27 @@ export interface RecepcionItem {
   sugerencia_pasillo?: string;
 }
 
+export type EmbarqueEstado = "Listo para cargar" | "En carga" | "Despachado";
+
+export interface EmbarqueItem {
+  id: string;
+  almacen_id: string;
+  tenant_id: string;
+  folio: string;               // Folio orden (ej: "ORD-2026-7890")
+  cliente: string;             // Cliente
+  destino_obra: string;        // Destino de obra
+  chofer_asignado: string;     // Chofer asignado + vehículo
+  bultos: number;              // Bultos / Pallets
+  peso_kg: number;             // Peso total en kg
+  hora_limite_salida: string;  // Hora límite (ej: "15:30 hs")
+  estado: EmbarqueEstado;      // 'Listo para cargar' | 'En carga' | 'Despachado'
+  items_resumen?: string;      // ej: "120 Bolsas Cemento Loma Negra 50kg"
+  muelle_embarque?: string;    // ej: "Muelle Salida 1"
+  prioridad?: "normal" | "alta" | "critica";
+  remito_numero?: string;
+  fecha_hora_preparado?: string;
+}
+
 // Generador de código estándar de ubicación WMS
 export function formatLocationCode(pasillo: number | string, rack: number, estanteria: number, nivel: number): string {
   const p = typeof pasillo === "string" ? pasillo.replace(/\D/g, "") || "1" : pasillo;
@@ -890,3 +911,138 @@ export function getSpatialCellsForWarehouse(almacenId: string, tenantId: string,
   }
   return generateDefaultWarehouseCells(almacenId, tenantId, warehouseName);
 }
+
+// ==========================================
+// DESPACHOS PREPARADOS EN ZONA DE EMBARQUE / MUELLE DE EXPEDICIÓN
+// ==========================================
+export const MOCK_EMBARQUE_ITEMS: EmbarqueItem[] = [
+  // Corralón Los Pinos S.R.L.
+  {
+    id: "emb-item-1",
+    almacen_id: "alm-pinos-central",
+    tenant_id: "tenant-los-pinos",
+    folio: "ORD-2026-7890",
+    cliente: "Constructora del Litoral S.A.",
+    destino_obra: "Torres del Río - Dique 2, Puerto Norte",
+    chofer_asignado: "Ramón González (Mercedes 1634 - Dominio AB-492-CD)",
+    bultos: 120,
+    peso_kg: 6000,
+    hora_limite_salida: "14:30 hs",
+    estado: "Listo para cargar",
+    items_resumen: "120 Bolsas Cemento Loma Negra 50kg (2 Pallets completos)",
+    muelle_embarque: "Muelle Salida 1 - Grúa Autopropulsada",
+    prioridad: "alta",
+    remito_numero: "REM-EXP-2026-0041",
+    fecha_hora_preparado: "Hoy, hace 35 min",
+  },
+  {
+    id: "emb-item-2",
+    almacen_id: "alm-pinos-central",
+    tenant_id: "tenant-los-pinos",
+    folio: "ORD-2026-7894",
+    cliente: "Ingeniería & Obras Civiles Rossi",
+    destino_obra: "Bv. Oroño 4500 (Edificio Plaza)",
+    chofer_asignado: "Esteban Quiroga (Iveco Tector - Dominio AF-104-ZZ)",
+    bultos: 45,
+    peso_kg: 1125,
+    hora_limite_salida: "16:00 hs",
+    estado: "En carga",
+    items_resumen: "45 Bolsas Cal Santa Elena 25kg + Aditivos",
+    muelle_embarque: "Muelle Salida 2 - Furgón Ligero",
+    prioridad: "normal",
+    remito_numero: "REM-EXP-2026-0042",
+    fecha_hora_preparado: "Hoy, hace 1h 10m",
+  },
+  {
+    id: "emb-item-3",
+    almacen_id: "alm-pinos-central",
+    tenant_id: "tenant-los-pinos",
+    folio: "ORD-2026-7898",
+    cliente: "Desarrollos Urbanos Rosario",
+    destino_obra: "Av. Pellegrini 2800 (Complejo Residencial)",
+    chofer_asignado: "Mariano Pereyra (Ford Cargo - Dominio AE-883-PK)",
+    bultos: 50,
+    peso_kg: 2500,
+    hora_limite_salida: "17:15 hs",
+    estado: "Listo para cargar",
+    items_resumen: "50 Bolsas Cemento Holcim Fuerte 50kg",
+    muelle_embarque: "Muelle Salida 1 - Grúa Autopropulsada",
+    prioridad: "normal",
+    remito_numero: "REM-EXP-2026-0043",
+    fecha_hora_preparado: "Hoy, hace 50 min",
+  },
+  {
+    id: "emb-item-4",
+    almacen_id: "alm-pinos-embarque",
+    tenant_id: "tenant-los-pinos",
+    folio: "ORD-2026-7901",
+    cliente: "Arquitectura & Estructuras SRL",
+    destino_obra: "Parque Industrial Oeste - Lote 14",
+    chofer_asignado: "Nahuel Vega (Scania G360 - Dominio AC-950-XY)",
+    bultos: 80,
+    peso_kg: 4000,
+    hora_limite_salida: "18:00 hs",
+    estado: "Despachado",
+    items_resumen: "80 Bolsas Cemento Loma Negra + Malla Sima",
+    muelle_embarque: "Dársena 3 - Salida Ruta",
+    prioridad: "normal",
+    remito_numero: "REM-EXP-2026-0044",
+    fecha_hora_preparado: "Hoy, 11:20 hs",
+  },
+
+  // Materiales del Centro S.A.
+  {
+    id: "emb-item-5",
+    almacen_id: "alm-centro-sucursal",
+    tenant_id: "tenant-materiales-centro",
+    folio: "ORD-2026-8105",
+    cliente: "Obras Viales Santa Fe",
+    destino_obra: "Autopista Rosario-Córdoba Km 312",
+    chofer_asignado: "Héctor Valenzuela (Scania R450 - Dominio AG-319-PL)",
+    bultos: 40,
+    peso_kg: 4260,
+    hora_limite_salida: "15:00 hs",
+    estado: "Listo para cargar",
+    items_resumen: "40 Barras Hierro Nervado Ø 12mm (12m c/u)",
+    muelle_embarque: "Plataforma Salida Pesada Grúa Puente",
+    prioridad: "critica",
+    remito_numero: "REM-EXP-2026-0089",
+    fecha_hora_preparado: "Hoy, hace 15 min",
+  },
+  {
+    id: "emb-item-6",
+    almacen_id: "alm-centro-sucursal",
+    tenant_id: "tenant-materiales-centro",
+    folio: "ORD-2026-8108",
+    cliente: "Edificadora del Paraná",
+    destino_obra: "San Lorenzo 1420, Rosario Centro",
+    chofer_asignado: "Claudio Morales (Mercedes Atego - Dominio AD-772-TY)",
+    bultos: 10,
+    peso_kg: 8000,
+    hora_limite_salida: "16:45 hs",
+    estado: "En carga",
+    items_resumen: "10 Pallets Ladrillo Hueco 12x18x33 (1440 un)",
+    muelle_embarque: "Dársena Salida 2",
+    prioridad: "normal",
+    remito_numero: "REM-EXP-2026-0090",
+    fecha_hora_preparado: "Hoy, hace 40 min",
+  },
+  {
+    id: "emb-item-7",
+    almacen_id: "alm-centro-embarque",
+    tenant_id: "tenant-materiales-centro",
+    folio: "ORD-2026-8112",
+    cliente: "Viviendas Rosario Norte",
+    destino_obra: "Av. Alberdi 600",
+    chofer_asignado: "Fernando Dávila (Iveco Daily - Dominio AE-123-BC)",
+    bultos: 25,
+    peso_kg: 1250,
+    hora_limite_salida: "17:30 hs",
+    estado: "Listo para cargar",
+    items_resumen: "25 Cajas Cerámicos Esmaltados 45x45",
+    muelle_embarque: "Dársena Salida Rápida 1",
+    prioridad: "normal",
+    remito_numero: "REM-EXP-2026-0091",
+    fecha_hora_preparado: "Hoy, hace 20 min",
+  },
+];

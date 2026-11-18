@@ -4,7 +4,8 @@
  * 1. ProductosService: Isolation, Dual Stock Invariant, Update, Toggle B2B Network
  * 2. AlmacenesService: Multi-tenant warehouses, Reception zones, Physical locations, Stock-to-cell assignment
  * 3. OrdenesService: Lifecycle state progression (Pendiente -> En preparación -> Despachada -> Entregada)
- * 4. Hybrid resilience & Zero Data Leakage
+ * 4. SyncMonitorService: Heartbeat, Connectivity state, Subscriptions, Forced trigger check
+ * 5. OfflineQueueService: Offline mutations, Zero leakage, Reconciliation & Inventory Deficit Conflict Resolution
  */
 
 import {
@@ -19,13 +20,16 @@ import {
   getOrdenes,
   createOrden,
   actualizarEstadoOrden,
+  syncMonitor,
+  offlineQueueService,
+  SyncState,
 } from "../src/lib/services";
 
 let passedTests = 0;
 let failedTests = 0;
 
-function assert(condition: boolean, testName: string, details = "") {
-  if (condition) {
+function assert(condition: boolean | unknown, testName: string, details = "") {
+  if (Boolean(condition)) {
     console.log(`  \x1b[32m✔ PASS\x1b[0m - ${testName}`);
     passedTests++;
   } else {
@@ -251,6 +255,282 @@ async function runTests() {
   assert(
     step3.estado === "Entregada",
     "actualizarEstadoOrden completed final delivery step 'Entregada'"
+  );
+
+  // -------------------------------------------------------------
+  // SUITE 4: SYNC MONITOR SERVICE & HEARTBEAT
+  // -------------------------------------------------------------
+  console.log("\n\x1b[1m[Suite 4] SyncMonitorService: Heartbeat & Connectivity State\x1b[0m");
+
+  const initialState = syncMonitor.getState();
+  assert(
+    typeof initialState.isOnline === "boolean" &&
+    typeof initialState.nextRetrySeconds === "number" &&
+    typeof initialState.isChecking === "boolean",
+    "syncMonitor.getState() provides strict SyncState contract",
+    `isOnline=${initialState.isOnline}, retryIn=${initialState.nextRetrySeconds}s`
+  );
+
+  // 4.1 Reactive subscription test
+  let receivedUpdates = 0;
+  let lastReceivedState: SyncState | null = null;
+  const unsubscribe = syncMonitor.subscribe((state) => {
+    receivedUpdates++;
+    lastReceivedState = state;
+  });
+
+  assert(
+    receivedUpdates >= 1 && lastReceivedState !== null,
+    "syncMonitor.subscribe() immediately broadcasts current sync state"
+  );
+
+  // 4.2 Simulated status changes and mock mode
+  syncMonitor.setMockOnline(false);
+  const stateOffline = syncMonitor.getState();
+  assert(
+    stateOffline.isOnline === false,
+    "syncMonitor accurately handles and propagates simulated offline transition"
+  );
+
+  syncMonitor.setMockOnline(true);
+  const stateOnline = syncMonitor.getState();
+  assert(
+    stateOnline.isOnline === true && stateOnline.lastSyncTime !== null,
+    "syncMonitor accurately handles and propagates simulated online transition with lastSyncTime timestamp"
+  );
+
+  // 4.3 Trigger manual check
+  const manualCheckResult = await syncMonitor.triggerCheck();
+  assert(
+    typeof manualCheckResult === "boolean",
+    "syncMonitor.triggerCheck() executes heartbeat check and returns boolean status without crashing"
+  );
+
+  // Reset mock state to clean up
+  syncMonitor.setMockOnline(null);
+  unsubscribe();
+
+  // -------------------------------------------------------------
+  // SUITE 5: OFFLINE QUEUE SERVICE & STOCK CONFLICT RECONCILIATION
+  // -------------------------------------------------------------
+  console.log("\n\x1b[1m[Suite 5] OfflineQueueService & Inventory Deficit Reconciliation Protocol\x1b[0m");
+
+  // Clean queues before running suite
+  offlineQueueService.clearQueue();
+
+  // 5.1 Enqueue offline mutations with Zero Leakage partitioning
+  const mut1 = offlineQueueService.enqueue({
+    tenantId: "tenant-los-pinos",
+    operarioId: "op-pinos-1",
+    productoId: newProduct.id,
+    tipo: "venta",
+    cantidad: 20,
+    stockRealAlMomento: 200,
+    detalles: { motivo: "Venta en mostrador sin red" },
+  });
+
+  const mut2 = offlineQueueService.enqueue({
+    tenantId: "tenant-materiales-centro",
+    operarioId: "op-centro-1",
+    productoId: "prod-hierro-nervado-12mm",
+    tipo: "venta",
+    cantidad: 10,
+    stockRealAlMomento: 250,
+  });
+
+  assert(
+    mut1.id.startsWith("mut-") && mut2.id.startsWith("mut-"),
+    "offlineQueueService.enqueue() generates unique traceable mutation IDs"
+  );
+
+  // Multi-tenant isolation in offline queue
+  const pinosQueue = offlineQueueService.getQueue("tenant-los-pinos");
+  const centroQueue = offlineQueueService.getQueue("tenant-materiales-centro");
+  const allQueue = offlineQueueService.getQueue();
+
+  assert(
+    pinosQueue.length === 1 && pinosQueue[0].id === mut1.id,
+    "offlineQueueService.getQueue() strictly isolates queued mutations for tenant-los-pinos"
+  );
+  assert(
+    centroQueue.length === 1 && centroQueue[0].id === mut2.id,
+    "offlineQueueService.getQueue() strictly isolates queued mutations for tenant-materiales-centro"
+  );
+  assert(
+    allQueue.length === 2,
+    "Consolidated queue correctly reflects all pending mutations across network"
+  );
+
+  // 5.2 Case A: Successful Reconciliation (stock_disponible >= cantidad)
+  // newProduct has: stock_real=200, stock_comprometido=50 -> stock_disponible=150
+  // mut1 demands 20 units -> 150 >= 20 -> Should apply smoothly
+  offlineQueueService.clearQueue("tenant-materiales-centro"); // Leave only mut1 for isolated test
+
+  const reconcileResultSuccess = await offlineQueueService.processReconciliation();
+  assert(
+    reconcileResultSuccess.exitosas === 1 && reconcileResultSuccess.conflictos === 0,
+    "processReconciliation() successfully applied valid mutation when stock_disponible >= cantidad",
+    `Exitosas=${reconcileResultSuccess.exitosas}, Conflictos=${reconcileResultSuccess.conflictos}`
+  );
+
+  const queueAfterSuccess = offlineQueueService.getQueue("tenant-los-pinos");
+  assert(
+    queueAfterSuccess.length === 0,
+    "Applied mutation is cleanly dequeued after successful reconciliation"
+  );
+
+  const prodsAfterReconciliation = await getProductos("tenant-los-pinos");
+  const recheckedProd = prodsAfterReconciliation.find((p) => p.id === newProduct.id);
+  assert(
+    !!recheckedProd &&
+    recheckedProd.stock_real === 180 && // 200 - 20 = 180
+    recheckedProd.stock_comprometido === 50 &&
+    recheckedProd.stock_disponible === 130, // 180 - 50 = 130
+    "Reconciliation maintained strict Dual Stock invariant (180 - 50 = 130)",
+    `Real=${recheckedProd?.stock_real}, Comp=${recheckedProd?.stock_comprometido}, Disp=${recheckedProd?.stock_disponible}`
+  );
+
+  // 5.3 Case B: Conflict / Stock Deficit Detection (stock_disponible < cantidad)
+  // Let's create a product with limited available stock
+  const limitedProduct = await createProducto({
+    tenant_id: "tenant-los-pinos",
+    codigo_barras: "7799999000222",
+    nombre: "Pintura Látex Exterior 20L",
+    categoria: "Terminaciones",
+    unidad_medida: "LT",
+    precio: 35000,
+    stock_real: 15,
+    stock_comprometido: 10, // Available = 15 - 10 = 5
+    stock_disponible: 5,
+    cantidad_minima: 5,
+    cantidad_maxima: 50,
+    publicado_en_red: false,
+    almacen_id: "alm-pinos-central",
+    ubicacion_estanteria: "Sector Pinturas",
+  });
+
+  // Offline operator attempts to sell 12 units (they saw stock_real=15, unaware of 10 committed units)
+  const conflictingMutation = offlineQueueService.enqueue({
+    tenantId: "tenant-los-pinos",
+    operarioId: "op-pinos-2",
+    productoId: limitedProduct.id,
+    tipo: "venta",
+    cantidad: 12, // Needs 12, but available is only 5 -> Deficit of 7
+    stockRealAlMomento: 15,
+  });
+
+  const reconcileConflictResult = await offlineQueueService.processReconciliation();
+  assert(
+    reconcileConflictResult.conflictos === 1 && reconcileConflictResult.exitosas === 0,
+    "processReconciliation() correctly detected inventory deficit and blocked blind mutation",
+    `Conflictos=${reconcileConflictResult.conflictos}, Exitosas=${reconcileConflictResult.exitosas}`
+  );
+
+  // Verify Conflict Inbox Entry
+  const activeConflicts = offlineQueueService.getConflictos("tenant-los-pinos");
+  const foundConflict = activeConflicts.find((c) => c.mutation.id === conflictingMutation.id);
+
+  assert(
+    !!foundConflict &&
+    foundConflict.estado === "pendiente_resolucion" &&
+    foundConflict.diferenciaFaltante === 7 && // 12 - 5 = 7
+    foundConflict.stockRemotoDisponible === 5,
+    "Conflict inbox stores detailed deficit record with missing difference (7 units)",
+    `Faltante=${foundConflict?.diferenciaFaltante}, Estado=${foundConflict?.estado}`
+  );
+
+  // 5.4 Admin Conflict Resolution Strategy 1: 'autorizar_extension'
+  const resolvedExtension = await offlineQueueService.resolverConflicto(
+    foundConflict!.id,
+    "autorizar_extension",
+    {
+      autorizadorId: "super-admin-humberto",
+      comentario: "Autorizado sobre stock físico con reposición urgente vía red B2B",
+    }
+  );
+
+  assert(
+    resolvedExtension.estado === "resuelto_extension" &&
+    resolvedExtension.resueltoPor === "super-admin-humberto" &&
+    Boolean(resolvedExtension.resolucionDetalle?.includes("B2B")),
+    "resolverConflicto('autorizar_extension') resolves deficit via B2B network / physical override"
+  );
+
+  // 5.5 Admin Conflict Resolution Strategy 2: 'ajuste_parcial'
+  // Create another conflicting mutation
+  const partialMutation = offlineQueueService.enqueue({
+    tenantId: "tenant-los-pinos",
+    operarioId: "op-pinos-3",
+    productoId: newProduct.id, // currently available: 130
+    tipo: "venta",
+    cantidad: 200, // Deficit: 200 - 130 = 70
+    stockRealAlMomento: 180,
+  });
+
+  await offlineQueueService.processReconciliation();
+  const partialConflict = offlineQueueService
+    .getConflictos("tenant-los-pinos")
+    .find((c) => c.mutation.id === partialMutation.id);
+
+  assert(
+    !!partialConflict && partialConflict.estado === "pendiente_resolucion",
+    "Second conflict created for partial fulfillment scenario"
+  );
+
+  const resolvedPartial = await offlineQueueService.resolverConflicto(
+    partialConflict!.id,
+    "ajuste_parcial",
+    {
+      autorizadorId: "encargado-deposito",
+      comentario: "Despachar lo disponible en stock y emitir remito por el saldo",
+    }
+  );
+
+  assert(
+    resolvedPartial.estado === "resuelto_parcial" &&
+    Boolean(resolvedPartial.resolucionDetalle?.includes("Ajuste parcial")),
+    "resolverConflicto('ajuste_parcial') fulfills available stock and queues backorder for remainder"
+  );
+
+  // 5.6 Admin Conflict Resolution Strategy 3: 'cancelar'
+  const cancelMutation = offlineQueueService.enqueue({
+    tenantId: "tenant-los-pinos",
+    operarioId: "op-pinos-4",
+    productoId: limitedProduct.id,
+    tipo: "venta",
+    cantidad: 999,
+    stockRealAlMomento: 3,
+  });
+
+  await offlineQueueService.processReconciliation();
+  const cancelConflict = offlineQueueService
+    .getConflictos("tenant-los-pinos")
+    .find((c) => c.mutation.id === cancelMutation.id);
+
+  const resolvedCancelled = await offlineQueueService.resolverConflicto(
+    cancelConflict!.id,
+    "cancelar",
+    {
+      autorizadorId: "supervisor-ventas",
+      comentario: "Cliente desistió ante el quiebre de stock",
+    }
+  );
+
+  assert(
+    resolvedCancelled.estado === "cancelado" &&
+    Boolean(resolvedCancelled.resolucionDetalle?.includes("cancelada")),
+    "resolverConflicto('cancelar') safely aborts offline transaction without corrupting inventory"
+  );
+
+  // 5.7 Audit Trail Verification
+  const auditLogs = offlineQueueService.getAuditoria("tenant-los-pinos");
+  assert(
+    auditLogs.length >= 3 &&
+    auditLogs.some((a) => a.resultado === "exito") &&
+    auditLogs.some((a) => a.resultado === "conflicto") &&
+    auditLogs.some((a) => a.resultado === "resuelto"),
+    "AuditoriaReconciliacion retains complete forensic log for all reconciliation events",
+    `Total audit events: ${auditLogs.length}`
   );
 
   // -------------------------------------------------------------
