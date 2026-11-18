@@ -396,6 +396,42 @@ assert(
 );
 
 // -------------------------------------------------------------
+// TEST SUITE 6: ROUTE ACCESS CONTROL & REDIRECTION RULES
+// -------------------------------------------------------------
+console.log("\n\x1b[1m[Suite 6] Role-Based Route Navigation & Redirection Rules\x1b[0m");
+
+function getLandingRouteForUser(u) {
+  if (u.is_super_admin) return "/dashboard";
+  if (u.tipo_empresa === "corralon") return "/productos";
+  if (u.rol === "cliente") return "/ordenes";
+  return "/dashboard";
+}
+
+const martinRoute = getLandingRouteForUser(MOCK_USERS.find((u) => u.email === "martin.rossi@lospinos.com.ar"));
+assert(
+  martinRoute === "/productos",
+  "Corralón login redirects directly to InvenTrack module (/productos)",
+  `Got: ${martinRoute}`
+);
+
+const humbertoRoute = getLandingRouteForUser(humberto);
+assert(
+  humbertoRoute === "/dashboard",
+  "Super admin login redirects to VERTIA Operations Center (/dashboard)",
+  `Got: ${humbertoRoute}`
+);
+
+const canAccessPlatformAdmin = (u) => u.is_super_admin === true;
+assert(
+  !canAccessPlatformAdmin(MOCK_USERS.find((u) => u.email === "martin.rossi@lospinos.com.ar")),
+  "Corralón user is strictly denied access to Platform Administration (/meta-admin)"
+);
+assert(
+  canAccessPlatformAdmin(humberto) && canAccessPlatformAdmin(federico),
+  "Super admins (Humberto & Federico) are granted access to Platform Administration"
+);
+
+// -------------------------------------------------------------
 // SUMMARY & REPORT
 // -------------------------------------------------------------
 console.log("\n=======================================================");

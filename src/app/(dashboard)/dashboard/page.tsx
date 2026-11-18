@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   CheckCircle2,
@@ -16,12 +17,59 @@ import {
   Eye,
   Check,
   X,
+  Lock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function CentroDeOperacionesPage() {
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
+
+  const isSuperAdmin = user?.is_super_admin ?? false;
+  const isCorralon =
+    !isSuperAdmin &&
+    (user?.tipo_empresa === "corralon" ||
+      user?.rol === "administrador" ||
+      user?.rol === "operario");
+  const isCliente = user?.rol === "cliente";
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (isCorralon) {
+        // Redirige al corralón directo a su módulo operativo de InvenTrack
+        router.replace("/productos");
+      } else if (isCliente) {
+        router.replace("/ordenes");
+      }
+    }
+  }, [isCorralon, isCliente, isLoading, router]);
+
+  if (isCorralon) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center text-center p-6 space-y-4">
+        <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 flex items-center justify-center">
+          <Boxes className="w-6 h-6 animate-pulse" />
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-slate-900">
+            Redirigiendo a tu Módulo InvenTrack...
+          </h2>
+          <p className="text-xs text-slate-500 mt-1 max-w-md">
+            Como miembro de <strong>{user?.tenant_nombre}</strong>, tu acceso operativo principal es la gestión de materiales y galpón.
+          </p>
+        </div>
+        <Link href="/productos">
+          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">
+            Ir a Materiales & Stock (InvenTrack)
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto text-slate-800">
       {/* Header Banner - Centro de Operaciones */}

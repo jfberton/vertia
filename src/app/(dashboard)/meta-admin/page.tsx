@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   CreditCard,
   Building2,
@@ -200,6 +202,7 @@ const mockUsuariosAdmin: UsuarioAdminInterno[] = [
 ];
 
 export default function MetaAdminPage() {
+  const { user } = useAuth();
   const [seccionActiva, setSeccionActiva] = useState<TabSeccion>("empresas");
   const [empresas, setEmpresas] = useState<EmpresaLicencia[]>(mockEmpresas);
   const [busqueda, setBusqueda] = useState("");
@@ -262,6 +265,29 @@ export default function MetaAdminPage() {
       })
     );
   };
+
+  if (user && !user.is_super_admin) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center text-center p-6 space-y-4">
+        <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-center justify-center">
+          <ShieldAlert className="w-6 h-6" />
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-slate-900">
+            Acceso Restringido: Consola de Administración de Plataforma
+          </h2>
+          <p className="text-xs text-slate-500 mt-1 max-w-md">
+            Esta sección es exclusiva para el equipo directivo de VERTIA. Tu usuario actual pertenece a <strong>{user.tenant_nombre || user.nombre_completo}</strong>.
+          </p>
+        </div>
+        <Link href="/productos">
+          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">
+            Volver a mi Módulo InvenTrack
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

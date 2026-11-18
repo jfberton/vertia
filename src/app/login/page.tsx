@@ -36,7 +36,15 @@ export default function LoginPage() {
     try {
       const res = await login(email, password);
       if (res.success) {
-        router.push("/dashboard");
+        // Redirige según el tipo de empresa / rol del usuario autenticado
+        const loggedUser = demoAccounts.find((d) => d.email === email);
+        if (loggedUser?.tipo === "corralon") {
+          router.push("/productos");
+        } else if (loggedUser?.tipo === "cliente") {
+          router.push("/ordenes");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         setError(res.error || "Error al iniciar sesión");
       }
@@ -47,14 +55,22 @@ export default function LoginPage() {
     }
   };
 
-  const handle1ClickLogin = (userId: string) => {
+  const handle1ClickLogin = (userId: string, tipo: string) => {
     loginAsDemoUser(userId);
-    router.push("/dashboard");
+    // Usuarios de corralón van directo a InvenTrack (Materiales & Stock)
+    if (tipo === "corralon") {
+      router.push("/productos");
+    } else if (tipo === "cliente") {
+      router.push("/ordenes");
+    } else {
+      router.push("/dashboard");
+    }
   };
 
   const demoAccounts = [
     {
       id: "usr-humberto",
+      email: "humberto@vertia.com",
       nombre: "Humberto Rivero Gonzalez",
       rolTitulo: "Super Administrador de Plataforma",
       empresa: "VERTIA Platform Core",
@@ -66,6 +82,7 @@ export default function LoginPage() {
     },
     {
       id: "usr-federico",
+      email: "federico@vertia.com",
       nombre: "Federico Bertoncini",
       rolTitulo: "Super Administrador de Plataforma",
       empresa: "VERTIA Platform Core",
@@ -77,6 +94,7 @@ export default function LoginPage() {
     },
     {
       id: "usr-martin-rossi",
+      email: "martin.rossi@lospinos.com.ar",
       nombre: "Ing. Martín Rossi",
       rolTitulo: "Administrador General",
       empresa: "Corralón Los Pinos S.R.L.",
@@ -88,6 +106,7 @@ export default function LoginPage() {
     },
     {
       id: "usr-juan-capataz",
+      email: "juan.capataz@lospinos.com.ar",
       nombre: "Juan Capataz",
       rolTitulo: "Operario de Galpón",
       empresa: "Corralón Los Pinos S.R.L.",
@@ -99,6 +118,7 @@ export default function LoginPage() {
     },
     {
       id: "usr-carlos-benitez",
+      email: "carlos.benitez@materialescentro.com.ar",
       nombre: "Lic. Carlos Benítez",
       rolTitulo: "Administrador de Sucursal",
       empresa: "Materiales del Centro S.A.",
@@ -110,6 +130,7 @@ export default function LoginPage() {
     },
     {
       id: "usr-lucas-deposito",
+      email: "lucas.deposito@materialescentro.com.ar",
       nombre: "Lucas Depósito",
       rolTitulo: "Operario de Galpón",
       empresa: "Materiales del Centro S.A.",
@@ -121,6 +142,7 @@ export default function LoginPage() {
     },
     {
       id: "usr-sofia-valenzuela",
+      email: "sofia.valenzuela@constructora.com",
       nombre: "Arq. Sofia Valenzuela",
       rolTitulo: "Cliente / Obra Solicitante",
       empresa: "Constructora Arcos / Obras Modernas",
@@ -280,7 +302,7 @@ export default function LoginPage() {
                 return (
                   <button
                     key={account.id}
-                    onClick={() => handle1ClickLogin(account.id)}
+                    onClick={() => handle1ClickLogin(account.id, account.tipo)}
                     className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 group cursor-pointer ${
                       isCurrent
                         ? "bg-indigo-950/40 border-indigo-500/80 ring-1 ring-indigo-500/50"
