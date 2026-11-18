@@ -151,12 +151,12 @@ export const MOCK_EVIDENCIAS: MultiTenantEvidencia[] = [
 ];
 
 // Cache en memoria para SSR o entornos sin window
-let memoryCacheProductos: MultiTenantProducto[] = [...MOCK_PRODUCTOS];
-let memoryCacheAlmacenes: MultiTenantAlmacen[] = [...MOCK_ALMACENES];
-let memoryCacheUbicaciones: MultiTenantUbicacion[] = [...MOCK_UBICACIONES];
-let memoryCacheOrdenes: MultiTenantOrden[] = [...MOCK_ORDENES];
-let memoryCacheEvidencias: MultiTenantEvidencia[] = [...MOCK_EVIDENCIAS];
-let memoryCacheEmbarques: EmbarqueItem[] = [...MOCK_EMBARQUE_ITEMS];
+let memoryCacheProductos: MultiTenantProducto[] = Array.isArray(MOCK_PRODUCTOS) ? [...MOCK_PRODUCTOS] : [];
+let memoryCacheAlmacenes: MultiTenantAlmacen[] = Array.isArray(MOCK_ALMACENES) ? [...MOCK_ALMACENES] : [];
+let memoryCacheUbicaciones: MultiTenantUbicacion[] = Array.isArray(MOCK_UBICACIONES) ? [...MOCK_UBICACIONES] : [];
+let memoryCacheOrdenes: MultiTenantOrden[] = Array.isArray(MOCK_ORDENES) ? [...MOCK_ORDENES] : [];
+let memoryCacheEvidencias: MultiTenantEvidencia[] = Array.isArray(MOCK_EVIDENCIAS) ? [...MOCK_EVIDENCIAS] : [];
+let memoryCacheEmbarques: EmbarqueItem[] = Array.isArray(MOCK_EMBARQUE_ITEMS) ? [...MOCK_EMBARQUE_ITEMS] : [];
 
 function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof localStorage !== "undefined";
