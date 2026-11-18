@@ -19,18 +19,28 @@ import {
   FileText,
   Warehouse,
   Users,
+  Activity,
+  Headphones,
+  ShieldAlert,
+  ArrowDownRight,
+  ArrowUpRight,
+  UserCheck,
+  KeyRound,
+  Radio,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
+type TabSeccion = "empresas" | "economia" | "salud_tickets" | "usuarios_admin";
+
 interface EmpresaLicencia {
   id: string;
   nombre: string;
   cuit_rfc: string;
   tipo: "Corralón de Materiales" | "Contratista / Obras" | "Constructora";
-  almacenesContratados: number; // 1 para mono-almacén, >1 para multi-almacén
+  almacenesContratados: number;
   administradorPrincipal: string;
   emailAdmin: string;
   plan: "Mono-Almacén" | "Multi-Almacén" | "Enterprise";
@@ -42,13 +52,31 @@ interface EmpresaLicencia {
   ultimoPagoEstado: "Al día" | "Pendiente" | "Vencido";
 }
 
+interface TicketSoporte {
+  id: string;
+  empresa: string;
+  asunto: string;
+  prioridad: "Alta" | "Media" | "Baja";
+  estado: "Abierto" | "En revisión" | "Resuelto";
+  hora: string;
+}
+
+interface UsuarioAdminInterno {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: "Super Administrador" | "Administrador Financiero" | "Operaciones & Red" | "Soporte Técnico";
+  estado: "Activo" | "Inactivo";
+  ultimoAcceso: string;
+}
+
 const mockEmpresas: EmpresaLicencia[] = [
   {
     id: "emp-1",
     nombre: "Corralón Los Pinos S.R.L.",
     cuit_rfc: "30-71458921-8",
     tipo: "Corralón de Materiales",
-    almacenesContratados: 1, // Ejemplo pedido por Humberto: 1 almacén con un administrador
+    almacenesContratados: 1,
     administradorPrincipal: "Ing. Martín Rossi",
     emailAdmin: "martin@corralonlospinos.com.ar",
     plan: "Mono-Almacén",
@@ -64,12 +92,12 @@ const mockEmpresas: EmpresaLicencia[] = [
     nombre: "Materiales del Centro S.A.",
     cuit_rfc: "30-68945231-4",
     tipo: "Corralón de Materiales",
-    almacenesContratados: 3, // Multi-almacén
+    almacenesContratados: 3,
     administradorPrincipal: "Lic. Carlos Benítez",
     emailAdmin: "carlos@materialesdelcentro.com",
     plan: "Multi-Almacén",
     precioBaseMensual: 129.0,
-    descuentoPorcentaje: 20, // Descuento de convenio
+    descuentoPorcentaje: 20,
     precioFinal: 103.2,
     estado: "Activa",
     fechaVencimiento: "28/02/2026",
@@ -85,7 +113,7 @@ const mockEmpresas: EmpresaLicencia[] = [
     emailAdmin: "sofia@obrasmodernas.com",
     plan: "Mono-Almacén",
     precioBaseMensual: 49.0,
-    descuentoPorcentaje: 100, // 3 meses gratis de bienvenida
+    descuentoPorcentaje: 100,
     precioFinal: 0.0,
     estado: "Prueba Gratuita",
     fechaVencimiento: "01/05/2026",
@@ -109,16 +137,78 @@ const mockEmpresas: EmpresaLicencia[] = [
   },
 ];
 
+const mockTickets: TicketSoporte[] = [
+  {
+    id: "TCK-102",
+    empresa: "Corralón Los Pinos",
+    asunto: "Error de sincronización con ERP Tango en lote de cal",
+    prioridad: "Alta",
+    estado: "En revisión",
+    hora: "Hoy 10:12",
+  },
+  {
+    id: "TCK-101",
+    empresa: "Constructora Arcos",
+    asunto: "Consulta sobre validación de evidencia en obra Torre Norte",
+    prioridad: "Media",
+    estado: "Abierto",
+    hora: "Hoy 09:40",
+  },
+  {
+    id: "TCK-098",
+    empresa: "Materiales del Centro",
+    asunto: "Ampliación de radio de cobertura de 25 km a 40 km",
+    prioridad: "Baja",
+    estado: "Resuelto",
+    hora: "Ayer 16:15",
+  },
+];
+
+const mockUsuariosAdmin: UsuarioAdminInterno[] = [
+  {
+    id: "usr-1",
+    nombre: "Humberto Rivero Gonzalez",
+    email: "humberto@vertia.com",
+    rol: "Super Administrador",
+    estado: "Activo",
+    ultimoAcceso: "En línea",
+  },
+  {
+    id: "usr-2",
+    nombre: "Lic. Mariana Costa",
+    email: "finanzas@vertia.com",
+    rol: "Administrador Financiero",
+    estado: "Activo",
+    ultimoAcceso: "Hoy 08:30",
+  },
+  {
+    id: "usr-3",
+    nombre: "Ing. Lucas Peralta",
+    email: "operaciones@vertia.com",
+    rol: "Operaciones & Red",
+    estado: "Activo",
+    ultimoAcceso: "Hoy 09:15",
+  },
+  {
+    id: "usr-4",
+    nombre: "Gabriel Méndez",
+    email: "soporte@vertia.com",
+    rol: "Soporte Técnico",
+    estado: "Activo",
+    ultimoAcceso: "Hoy 10:05",
+  },
+];
+
 export default function MetaAdminPage() {
+  const [seccionActiva, setSeccionActiva] = useState<TabSeccion>("empresas");
   const [empresas, setEmpresas] = useState<EmpresaLicencia[]>(mockEmpresas);
   const [busqueda, setBusqueda] = useState("");
-  const [empresaSeleccionada, setEmpresaSeleccionada] =
-    useState<EmpresaLicencia | null>(null);
+  const [empresaSeleccionada, setEmpresaSeleccionada] = useState<EmpresaLicencia | null>(null);
   const [nuevoDescuento, setNuevoDescuento] = useState(0);
   const [nuevoPlan, setNuevoPlan] = useState<"Mono-Almacén" | "Multi-Almacén" | "Enterprise">("Mono-Almacén");
   const [mensajeNotificacion, setMensajeNotificacion] = useState<string | null>(null);
 
-  // Filtrado
+  // Filtrado de empresas
   const empresasFiltradas = empresas.filter(
     (e) =>
       e.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -131,12 +221,6 @@ export default function MetaAdminPage() {
   const totalMontoMensual = empresas
     .filter((e) => e.estado === "Activa")
     .reduce((acc, curr) => acc + curr.precioFinal, 0);
-
-  const abrirModalAjuste = (empresa: EmpresaLicencia) => {
-    setEmpresaSeleccionada(empresa);
-    setNuevoDescuento(empresa.descuentoPorcentaje);
-    setNuevoPlan(empresa.plan);
-  };
 
   const guardarCambiosLicencia = () => {
     if (!empresaSeleccionada) return;
@@ -162,11 +246,9 @@ export default function MetaAdminPage() {
       )
     );
 
-    setMensajeNotificacion(
-      `Plan y descuento actualizados con éxito para "${empresaSeleccionada.nombre}".`
-    );
+    setMensajeNotificacion(`Licencia de "${empresaSeleccionada.nombre}" actualizada.`);
     setEmpresaSeleccionada(null);
-    setTimeout(() => setMensajeNotificacion(null), 4000);
+    setTimeout(() => setMensajeNotificacion(null), 3500);
   };
 
   const toggleSuspension = (id: string) => {
@@ -183,7 +265,7 @@ export default function MetaAdminPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header Meta-Admin */}
+      {/* Header Corporativo de Administración de Plataforma */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2">
@@ -193,22 +275,24 @@ export default function MetaAdminPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold tracking-tight text-slate-900">
-                  Panel Meta-Administrador (VERTIA Core)
+                  Portal de Administración de Plataforma (VERTIA Core)
                 </h1>
                 <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[10px] font-bold">
-                  Acceso Humberto
+                  Consola Interna
                 </Badge>
               </div>
               <p className="text-xs text-slate-500">
-                Gestión de empresas cliente (corralones, contratistas), administración de licencias, cobros y políticas de descuentos.
+                Centro de gobierno para supervisar empresas, finanzas de suscripciones, salud de la red y roles de administración.
               </p>
             </div>
           </div>
         </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs">
-          <Plus className="w-4 h-4 mr-1.5" />
-          Dar de Alta Nueva Empresa
-        </Button>
+
+        {/* Indicador de rol activo */}
+        <div className="flex items-center gap-2 text-xs bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-slate-600">
+          <KeyRound className="w-3.5 h-3.5 text-amber-600" />
+          <span>Sesión: <strong>Super Administrador (Humberto)</strong></span>
+        </div>
       </div>
 
       {mensajeNotificacion && (
@@ -218,223 +302,495 @@ export default function MetaAdminPage() {
         </div>
       )}
 
-      {/* Métricas Globales del Negocio SaaS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 bg-white border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Empresas en la Red</span>
-            <Building2 className="w-4 h-4 text-indigo-600" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">{empresas.length}</span>
-            <span className="text-xs text-emerald-600 font-semibold flex items-center">
-              <TrendingUp className="w-3 h-3 mr-0.5" /> +2 este mes
-            </span>
-          </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            {totalActivas} con licencias operativas activas
-          </span>
-        </Card>
+      {/* Selector de Pestañas / Módulos de la Herramienta */}
+      <div className="flex border-b border-slate-200 space-x-2 text-xs font-semibold">
+        <button
+          onClick={() => setSeccionActiva("empresas")}
+          className={`pb-3 px-3 border-b-2 flex items-center gap-1.5 transition-colors ${
+            seccionActiva === "empresas"
+              ? "border-indigo-600 text-indigo-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          Empresas & Suscripciones ({empresas.length})
+        </button>
 
-        <Card className="p-4 bg-white border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Facturación Mensual (MRR)</span>
-            <DollarSign className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">
-              ${totalMontoMensual.toFixed(2)} USD
-            </span>
-            <span className="text-xs text-slate-500 font-medium">/ mes</span>
-          </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            Ingresos netos por cobro de licencias InvenTrack
-          </span>
-        </Card>
+        <button
+          onClick={() => setSeccionActiva("economia")}
+          className={`pb-3 px-3 border-b-2 flex items-center gap-1.5 transition-colors ${
+            seccionActiva === "economia"
+              ? "border-indigo-600 text-indigo-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <DollarSign className="w-4 h-4" />
+          Economía & Finanzas (MRR)
+        </button>
 
-        <Card className="p-4 bg-white border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Descuentos & Becas</span>
-            <Percent className="w-4 h-4 text-amber-600" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">
-              {empresas.filter((e) => e.descuentoPorcentaje > 0).length}
-            </span>
-            <span className="text-xs text-amber-700 font-medium">Planes bonificados</span>
-          </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            Convenios con cámaras de construcción y pruebas
-          </span>
-        </Card>
+        <button
+          onClick={() => setSeccionActiva("salud_tickets")}
+          className={`pb-3 px-3 border-b-2 flex items-center gap-1.5 transition-colors ${
+            seccionActiva === "salud_tickets"
+              ? "border-indigo-600 text-indigo-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Activity className="w-4 h-4" />
+          Salud, Tickets & Errores (3)
+        </button>
 
-        <Card className="p-4 bg-white border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Almacenes Conectados</span>
-            <Warehouse className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">
-              {empresas.reduce((acc, curr) => acc + curr.almacenesContratados, 0)}
-            </span>
-            <span className="text-xs text-purple-700 font-medium">Galpones activos</span>
-          </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">
-            Mono-almacén y multi-sucursal con matriz 3D
-          </span>
-        </Card>
+        <button
+          onClick={() => setSeccionActiva("usuarios_admin")}
+          className={`pb-3 px-3 border-b-2 flex items-center gap-1.5 transition-colors ${
+            seccionActiva === "usuarios_admin"
+              ? "border-indigo-600 text-indigo-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <UserCheck className="w-4 h-4" />
+          Usuarios de Administración (4 Roles)
+        </button>
       </div>
 
-      {/* Filtros de Búsqueda de Empresas */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por corralón, CUIT o administrador..."
-            className="pl-9 h-9 text-xs border-slate-200"
-          />
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
-            Filtro: Todos los planes
-          </Badge>
-        </div>
-      </div>
+      {/* =========================================================================
+          SECCIÓN 1: EMPRESAS & SUSCRIPCIONES
+         ========================================================================= */}
+      {seccionActiva === "empresas" && (
+        <div className="space-y-4">
+          {/* Métricas Rápidas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="p-4 bg-white border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+                <span>Total Empresas Inscriptas</span>
+                <Building2 className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div className="text-2xl font-black text-slate-900 mt-2">{empresas.length}</div>
+              <span className="text-[11px] text-emerald-600 font-semibold mt-1 block">
+                {totalActivas} con licencias operativas activas
+              </span>
+            </Card>
 
-      {/* Tabla Principal de Empresas y Licencias */}
-      <Card className="bg-white border-slate-200 shadow-xs overflow-hidden rounded-xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
-              <tr>
-                <th className="py-3 px-4">Empresa / Corralón</th>
-                <th className="py-3 px-4">Tipo & Almacenes</th>
-                <th className="py-3 px-4">Administrador</th>
-                <th className="py-3 px-4">Plan Asignado</th>
-                <th className="py-3 px-4 text-center">Descuento</th>
-                <th className="py-3 px-4 text-center">Cobro Mensual</th>
-                <th className="py-3 px-4 text-center">Estado Licencia</th>
-                <th className="py-3 px-4 text-right">Gestión</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {empresasFiltradas.map((empresa) => (
-                <tr key={empresa.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 px-4">
-                    <div className="font-bold text-slate-900">{empresa.nombre}</div>
-                    <div className="text-[11px] text-slate-400 font-mono">{empresa.cuit_rfc}</div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <div className="text-slate-800 font-medium">{empresa.tipo}</div>
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                      <Warehouse className="w-3 h-3 text-slate-400" />
-                      {empresa.almacenesContratados === 1
-                        ? "1 Almacén (Mono-sede)"
-                        : `${empresa.almacenesContratados} Almacenes (Multi-sede)`}
+            <Card className="p-4 bg-white border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+                <span>Facturación Mensual (MRR)</span>
+                <DollarSign className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="text-2xl font-black text-slate-900 mt-2">
+                ${totalMontoMensual.toFixed(2)} USD
+              </div>
+              <span className="text-[11px] text-slate-400 mt-1 block">
+                Cobro recurrente de licencias InvenTrack
+              </span>
+            </Card>
+
+            <Card className="p-4 bg-white border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+                <span>Bonificaciones & Descuentos</span>
+                <Percent className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="text-2xl font-black text-slate-900 mt-2">
+                {empresas.filter((e) => e.descuentoPorcentaje > 0).length}
+              </div>
+              <span className="text-[11px] text-amber-700 mt-1 block">
+                Planes con convenio o períodos de prueba
+              </span>
+            </Card>
+
+            <Card className="p-4 bg-white border-slate-200 shadow-xs">
+              <div className="flex items-center justify-between text-slate-500 text-xs font-semibold">
+                <span>Almacenes Conectados</span>
+                <Warehouse className="w-4 h-4 text-purple-600" />
+              </div>
+              <div className="text-2xl font-black text-slate-900 mt-2">
+                {empresas.reduce((acc, curr) => acc + curr.almacenesContratados, 0)}
+              </div>
+              <span className="text-[11px] text-purple-700 mt-1 block">
+                Mono-almacén y multi-sucursal con matriz 3D
+              </span>
+            </Card>
+          </div>
+
+          {/* Buscador */}
+          <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar por corralón, CUIT o administrador..."
+                className="pl-9 h-9 text-xs border-slate-200"
+              />
+            </div>
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs">
+              <Plus className="w-4 h-4 mr-1.5" />
+              Dar de Alta Corralón / Empresa
+            </Button>
+          </div>
+
+          {/* Tabla de Empresas */}
+          <Card className="bg-white border-slate-200 shadow-xs overflow-hidden rounded-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
+                  <tr>
+                    <th className="py-3 px-4">Empresa / Corralón</th>
+                    <th className="py-3 px-4">Tipo & Almacenes</th>
+                    <th className="py-3 px-4">Administrador</th>
+                    <th className="py-3 px-4">Plan Asignado</th>
+                    <th className="py-3 px-4 text-center">Descuento</th>
+                    <th className="py-3 px-4 text-center">Cobro Mensual</th>
+                    <th className="py-3 px-4 text-center">Estado Licencia</th>
+                    <th className="py-3 px-4 text-right">Gestión</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {empresasFiltradas.map((empresa) => (
+                    <tr key={empresa.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900">{empresa.nombre}</div>
+                        <div className="text-[11px] text-slate-400 font-mono">{empresa.cuit_rfc}</div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="text-slate-800 font-medium">{empresa.tipo}</div>
+                        <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                          <Warehouse className="w-3 h-3 text-slate-400" />
+                          {empresa.almacenesContratados === 1
+                            ? "1 Almacén (Mono-sede)"
+                            : `${empresa.almacenesContratados} Almacenes (Multi-sede)`}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="text-slate-800 font-medium">{empresa.administradorPrincipal}</div>
+                        <div className="text-[11px] text-slate-400">{empresa.emailAdmin}</div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-md font-semibold text-[11px] border ${
+                            empresa.plan === "Mono-Almacén"
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : empresa.plan === "Multi-Almacén"
+                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                              : "bg-amber-50 text-amber-800 border-amber-200"
+                          }`}
+                        >
+                          {empresa.plan}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        {empresa.descuentoPorcentaje > 0 ? (
+                          <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full text-[11px]">
+                            -{empresa.descuentoPorcentaje}%
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">Sin desc.</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="font-extrabold text-slate-900">
+                          ${empresa.precioFinal.toFixed(2)} USD
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold text-[11px] border ${
+                            empresa.estado === "Activa"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : empresa.estado === "Prueba Gratuita"
+                              ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                              : "bg-rose-50 text-rose-700 border-rose-200"
+                          }`}
+                        >
+                          {empresa.estado}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            onClick={() => {
+                              setEmpresaSeleccionada(empresa);
+                              setNuevoDescuento(empresa.descuentoPorcentaje);
+                              setNuevoPlan(empresa.plan);
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-[11px] border-slate-200 hover:bg-slate-50 text-slate-700"
+                          >
+                            Ajustar Plan
+                          </Button>
+                          <Button
+                            onClick={() => toggleSuspension(empresa.id)}
+                            variant="ghost"
+                            size="sm"
+                            className={`h-7 text-[11px] ${
+                              empresa.estado === "Suspendida"
+                                ? "text-emerald-700 hover:bg-emerald-50"
+                                : "text-rose-600 hover:bg-rose-50"
+                            }`}
+                          >
+                            {empresa.estado === "Suspendida" ? "Reactivar" : "Suspender"}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* =========================================================================
+          SECCIÓN 2: ECONOMÍA & FINANZAS
+         ========================================================================= */}
+      {seccionActiva === "economia" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-5 bg-white border-slate-200 shadow-xs">
+              <span className="text-xs font-semibold text-slate-500">Ingresos Mensuales Recurrentes (MRR)</span>
+              <div className="text-3xl font-black text-slate-900 mt-2">$3,450.00 USD</div>
+              <div className="flex items-center gap-1 text-xs text-emerald-600 font-bold mt-1">
+                <ArrowUpRight className="w-4 h-4" /> +18.5% respecto al mes anterior
+              </div>
+            </Card>
+
+            <Card className="p-5 bg-white border-slate-200 shadow-xs">
+              <span className="text-xs font-semibold text-slate-500">Costos de Infraestructura Cloud</span>
+              <div className="text-3xl font-black text-slate-700 mt-2">$25.00 USD</div>
+              <div className="text-xs text-slate-400 mt-1">
+                Cloudflare ($0) + Supabase Pro ($25)
+              </div>
+            </Card>
+
+            <Card className="p-5 bg-white border-emerald-200 bg-emerald-50/20 shadow-xs">
+              <span className="text-xs font-semibold text-emerald-800">Margen Operativo Bruto</span>
+              <div className="text-3xl font-black text-emerald-700 mt-2">99.2%</div>
+              <div className="text-xs text-emerald-800 font-medium mt-1">
+                Negocio SaaS de alta rentabilidad
+              </div>
+            </Card>
+          </div>
+
+          <Card className="p-5 bg-white border-slate-200 shadow-xs space-y-3">
+            <h3 className="text-sm font-bold text-slate-900">Libro de Cobranzas & Movimientos Recientes</h3>
+            <div className="divide-y divide-slate-100 text-xs">
+              <div className="py-2.5 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-slate-800">Corralón Los Pinos S.R.L.</span>
+                  <span className="text-slate-400 block text-[11px]">Suscripción Plan Mono-Almacén • Factura #A-0004-1290</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-emerald-700">+$49.00 USD</span>
+                  <span className="text-[10px] text-slate-400 block">Cobrado (Tarjeta)</span>
+                </div>
+              </div>
+
+              <div className="py-2.5 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-slate-800">Materiales del Centro S.A.</span>
+                  <span className="text-slate-400 block text-[11px]">Suscripción Plan Multi-Almacén (Desc. 20%) • Factura #A-0004-1291</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-emerald-700">+$103.20 USD</span>
+                  <span className="text-[10px] text-slate-400 block">Cobrado (Transferencia)</span>
+                </div>
+              </div>
+
+              <div className="py-2.5 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-slate-800">Supabase Inc. (Infraestructura Cloud)</span>
+                  <span className="text-slate-400 block text-[11px]">Base de datos PostgreSQL 15 & Storage 100GB</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-rose-600">-$25.00 USD</span>
+                  <span className="text-[10px] text-slate-400 block">Débito automático</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* =========================================================================
+          SECCIÓN 3: SALUD, TICKETS & ERRORES
+         ========================================================================= */}
+      {seccionActiva === "salud_tickets" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-4 bg-white border-slate-200 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs text-slate-500 font-semibold">Estado de la Plataforma</span>
+                <div className="text-lg font-bold text-emerald-700 mt-1 flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  100% Operativa (Uptime 99.98%)
+                </div>
+              </div>
+              <Radio className="w-6 h-6 text-emerald-600" />
+            </Card>
+
+            <Card className="p-4 bg-white border-slate-200 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs text-slate-500 font-semibold">Operaciones Mensuales</span>
+                <div className="text-lg font-bold text-slate-900 mt-1">2,480 Pedidos</div>
+              </div>
+              <Activity className="w-6 h-6 text-indigo-600" />
+            </Card>
+
+            <Card className="p-4 bg-white border-slate-200 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs text-slate-500 font-semibold">Tickets Pendientes</span>
+                <div className="text-lg font-bold text-amber-700 mt-1">2 en curso</div>
+              </div>
+              <Headphones className="w-6 h-6 text-amber-600" />
+            </Card>
+          </div>
+
+          {/* Tabla de Tickets de Mesa de Ayuda */}
+          <Card className="p-5 bg-white border-slate-200 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900">Mesa de Ayuda & Reclamos Reportados</h3>
+              <Badge variant="outline" className="text-xs border-slate-200">
+                Soporte Tier 2
+              </Badge>
+            </div>
+
+            <div className="divide-y divide-slate-100 text-xs">
+              {mockTickets.map((tck) => (
+                <div key={tck.id} className="py-3 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-indigo-600">{tck.id}</span>
+                      <span className="font-bold text-slate-900">{tck.asunto}</span>
+                      <Badge
+                        className={`text-[10px] ${
+                          tck.prioridad === "Alta"
+                            ? "bg-rose-50 text-rose-700 border-rose-200"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {tck.prioridad}
+                      </Badge>
                     </div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <div className="text-slate-800 font-medium">{empresa.administradorPrincipal}</div>
-                    <div className="text-[11px] text-slate-400">{empresa.emailAdmin}</div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-md font-semibold text-[11px] border ${
-                        empresa.plan === "Mono-Almacén"
-                          ? "bg-blue-50 text-blue-700 border-blue-200"
-                          : empresa.plan === "Multi-Almacén"
-                          ? "bg-purple-50 text-purple-700 border-purple-200"
-                          : "bg-amber-50 text-amber-800 border-amber-200"
-                      }`}
-                    >
-                      {empresa.plan}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    {empresa.descuentoPorcentaje > 0 ? (
-                      <span className="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full text-[11px]">
-                        -{empresa.descuentoPorcentaje}%
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 text-[11px]">Sin desc.</span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <div className="font-extrabold text-slate-900">
-                      ${empresa.precioFinal.toFixed(2)} USD
+                    <div className="text-[11px] text-slate-400">
+                      Reportado por <strong>{tck.empresa}</strong> • {tck.hora}
                     </div>
-                    {empresa.descuentoPorcentaje > 0 && (
-                      <div className="text-[10px] text-slate-400 line-through">
-                        ${empresa.precioBaseMensual.toFixed(2)} USD
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
+                  </div>
+
+                  <div className="flex items-center gap-2">
                     <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold text-[11px] border ${
-                        empresa.estado === "Activa"
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
+                        tck.estado === "Resuelto"
                           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          : empresa.estado === "Prueba Gratuita"
-                          ? "bg-indigo-50 text-indigo-700 border-indigo-200"
-                          : "bg-rose-50 text-rose-700 border-rose-200"
+                          : tck.estado === "En revisión"
+                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                          : "bg-amber-50 text-amber-700 border-amber-200"
                       }`}
                     >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          empresa.estado === "Activa"
-                            ? "bg-emerald-600"
-                            : empresa.estado === "Prueba Gratuita"
-                            ? "bg-indigo-600"
-                            : "bg-rose-600"
-                        }`}
-                      ></span>
-                      {empresa.estado}
+                      {tck.estado}
                     </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button
-                        onClick={() => abrirModalAjuste(empresa)}
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-[11px] border-slate-200 hover:bg-slate-50 text-slate-700"
-                      >
-                        Ajustar Licencia
-                      </Button>
-                      <Button
-                        onClick={() => toggleSuspension(empresa.id)}
-                        variant="ghost"
-                        size="sm"
-                        className={`h-7 text-[11px] ${
-                          empresa.estado === "Suspendida"
-                            ? "text-emerald-700 hover:bg-emerald-50"
-                            : "text-rose-600 hover:bg-rose-50"
-                        }`}
-                      >
-                        {empresa.estado === "Suspendida" ? "Reactivar" : "Suspender"}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                    <Button variant="outline" size="sm" className="h-7 text-[11px] border-slate-200">
+                      Ver Caso
+                    </Button>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </Card>
         </div>
-      </Card>
+      )}
 
-      {/* Modal de Ajuste de Licencias, Planes y Descuentos */}
+      {/* =========================================================================
+          SECCIÓN 4: USUARIOS DE ADMINISTRACIÓN (GOBIERNO DE ROLES)
+         ========================================================================= */}
+      {seccionActiva === "usuarios_admin" && (
+        <div className="space-y-4">
+          <Card className="p-4 bg-indigo-50/50 border-indigo-100 text-xs text-indigo-900 flex items-center justify-between">
+            <div>
+              <span className="font-bold block">Matriz de Roles de Administración de Plataforma</span>
+              <span className="text-[11px] text-indigo-700">
+                Los usuarios listados a continuación pertenecen al equipo interno de VERTIA y no a empresas clientes.
+              </span>
+            </div>
+            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs">
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Crear Operador de Staff
+            </Button>
+          </Card>
+
+          <Card className="bg-white border-slate-200 shadow-xs overflow-hidden rounded-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
+                  <tr>
+                    <th className="py-3 px-4">Usuario / Funcionario</th>
+                    <th className="py-3 px-4">Email</th>
+                    <th className="py-3 px-4">Rol Asignado</th>
+                    <th className="py-3 px-4">Alcance de Vistas</th>
+                    <th className="py-3 px-4 text-center">Estado</th>
+                    <th className="py-3 px-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {mockUsuariosAdmin.map((u) => (
+                    <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-slate-900">{u.nombre}</td>
+                      <td className="py-3.5 px-4 font-mono text-slate-500">{u.email}</td>
+                      <td className="py-3.5 px-4">
+                        <Badge
+                          className={`font-semibold ${
+                            u.rol === "Super Administrador"
+                              ? "bg-amber-100 text-amber-800 border-amber-200"
+                              : u.rol === "Administrador Financiero"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : u.rol === "Operaciones & Red"
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : "bg-purple-50 text-purple-700 border-purple-200"
+                          }`}
+                        >
+                          {u.rol}
+                        </Badge>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-500 text-[11px]">
+                        {u.rol === "Super Administrador"
+                          ? "Acceso total 360° (Finanzas, Red, Licencias y Staff)"
+                          : u.rol === "Administrador Financiero"
+                          ? "Módulo de Economía, Facturación y Cobranzas"
+                          : u.rol === "Operaciones & Red"
+                          ? "Monitoreo de pedidos, corralones y evidencias"
+                          : "Tickets de soporte y logs de errores de sistema"}
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold text-[11px]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                          {u.estado}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs text-slate-500 hover:text-slate-800">
+                          Editar Permisos
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Ajuste de Plan / Descuento */}
       {empresaSeleccionada && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <Card className="bg-white border-slate-200 shadow-xl max-w-lg w-full p-6 space-y-4 rounded-xl">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
-                  Control Meta-Administrador
+                  Gestión de Licencia
                 </span>
                 <h3 className="text-base font-bold text-slate-900">
-                  Ajustar Licencia: {empresaSeleccionada.nombre}
+                  {empresaSeleccionada.nombre}
                 </h3>
               </div>
               <button
@@ -446,7 +802,6 @@ export default function MetaAdminPage() {
             </div>
 
             <div className="space-y-4 text-xs">
-              {/* Selección de Plan */}
               <div>
                 <label className="font-semibold text-slate-700 block mb-1">
                   Plan de Suscripción InvenTrack:
@@ -463,7 +818,6 @@ export default function MetaAdminPage() {
                   >
                     <div className="font-bold text-slate-900">Mono-Almacén</div>
                     <div className="text-[10px] text-slate-500">$49 USD/mes</div>
-                    <div className="text-[9px] text-slate-400 mt-0.5">1 Galpón</div>
                   </button>
 
                   <button
@@ -477,7 +831,6 @@ export default function MetaAdminPage() {
                   >
                     <div className="font-bold text-slate-900">Multi-Almacén</div>
                     <div className="text-[10px] text-slate-500">$129 USD/mes</div>
-                    <div className="text-[9px] text-slate-400 mt-0.5">Hasta 5 sedes</div>
                   </button>
 
                   <button
@@ -491,12 +844,10 @@ export default function MetaAdminPage() {
                   >
                     <div className="font-bold text-slate-900">Enterprise</div>
                     <div className="text-[10px] text-slate-500">$299 USD/mes</div>
-                    <div className="text-[9px] text-slate-400 mt-0.5">Ilimitado</div>
                   </button>
                 </div>
               </div>
 
-              {/* Manejo de Descuento */}
               <div>
                 <label className="font-semibold text-slate-700 block mb-1">
                   Porcentaje de Descuento / Bonificación:
@@ -514,50 +865,25 @@ export default function MetaAdminPage() {
                     <button
                       type="button"
                       onClick={() => setNuevoDescuento(0)}
-                      className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[11px] text-slate-700"
+                      className="px-2 py-1 rounded bg-slate-100 text-[11px] text-slate-700"
                     >
-                      0% (Sin desc.)
+                      0%
                     </button>
                     <button
                       type="button"
                       onClick={() => setNuevoDescuento(20)}
-                      className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[11px] text-slate-700"
+                      className="px-2 py-1 rounded bg-slate-100 text-[11px] text-slate-700"
                     >
                       20% Convenio
                     </button>
                     <button
                       type="button"
                       onClick={() => setNuevoDescuento(100)}
-                      className="px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-[11px] text-amber-800 font-semibold"
+                      className="px-2 py-1 rounded bg-amber-100 text-[11px] text-amber-800 font-semibold"
                     >
-                      100% (Prueba Gratis)
+                      100% Bonificado
                     </button>
                   </div>
-                </div>
-              </div>
-
-              {/* Cálculo en vivo */}
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1">
-                <div className="flex justify-between text-slate-600">
-                  <span>Precio Base del Plan:</span>
-                  <span>
-                    ${nuevoPlan === "Mono-Almacén" ? "49.00" : nuevoPlan === "Multi-Almacén" ? "129.00" : "299.00"} USD
-                  </span>
-                </div>
-                <div className="flex justify-between text-amber-700 font-medium">
-                  <span>Descuento aplicado:</span>
-                  <span>-{nuevoDescuento}%</span>
-                </div>
-                <div className="pt-1.5 border-t border-slate-200 flex justify-between font-bold text-slate-900 text-sm">
-                  <span>Total Cobro Mensual:</span>
-                  <span className="text-indigo-600">
-                    $
-                    {(
-                      (nuevoPlan === "Mono-Almacén" ? 49 : nuevoPlan === "Multi-Almacén" ? 129 : 299) *
-                      (1 - nuevoDescuento / 100)
-                    ).toFixed(2)}{" "}
-                    USD
-                  </span>
                 </div>
               </div>
             </div>
@@ -576,7 +902,7 @@ export default function MetaAdminPage() {
                 onClick={guardarCambiosLicencia}
                 className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
               >
-                Guardar y Aplicar Cambios
+                Aplicar Ajustes
               </Button>
             </div>
           </Card>

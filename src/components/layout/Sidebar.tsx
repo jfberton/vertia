@@ -42,8 +42,8 @@ export function Sidebar() {
       badgeColor: "bg-teal-100 text-teal-700 border-teal-200",
     },
     meta_admin: {
-      nombre: "Meta-Administrador",
-      subtitulo: "Licencias, Pagos & Red",
+      nombre: "Admin. de Plataforma",
+      subtitulo: "Gobierno, Finanzas & Red",
       badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
     },
   };
@@ -55,7 +55,7 @@ export function Sidebar() {
     { label: "Almacenes 3D & Muelle", href: "/almacenes", icon: Warehouse },
     { label: "Validación de Evidencias", href: "/evidencias", icon: Camera, badge: "Fotos" },
     { label: "Red Colaborativa B2B", href: "/red-b2b", icon: Globe2, badge: "Red" },
-    { label: "Meta-Admin (Licencias)", href: "/meta-admin", icon: CreditCard, badge: "Humberto" },
+    { label: "Admin. de Plataforma", href: "/meta-admin", icon: CreditCard, badge: "Core" },
     { label: "Usuarios & Permisos", href: "/usuarios", icon: Users2 },
   ];
 
