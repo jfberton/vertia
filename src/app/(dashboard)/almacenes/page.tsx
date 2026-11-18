@@ -20,6 +20,8 @@ interface MockAlmacen {
   id: string;
   nombre: string;
   direccion: string;
+  radio_cobertura_km: number;
+  coordenadas_gps: string;
   capacidad_maxima: number;
   es_zona_recepcion: boolean;
   total_ubicaciones: number;
@@ -31,6 +33,8 @@ const mockAlmacenes: MockAlmacen[] = [
     id: "alm-1",
     nombre: "Almacén Central A1",
     direccion: "Av. Circunvalación 4500, Rosario",
+    radio_cobertura_km: 35,
+    coordenadas_gps: "-32.9511, -60.6663",
     capacidad_maxima: 5000,
     es_zona_recepcion: false,
     total_ubicaciones: 240,
@@ -40,6 +44,8 @@ const mockAlmacenes: MockAlmacen[] = [
     id: "alm-2",
     nombre: "Muelle de Recepción & Staging",
     direccion: "Muelle 02 - Portón Norte",
+    radio_cobertura_km: 10,
+    coordenadas_gps: "-32.9480, -60.6620",
     capacidad_maxima: 1000,
     es_zona_recepcion: true,
     total_ubicaciones: 40,
@@ -49,6 +55,8 @@ const mockAlmacenes: MockAlmacen[] = [
     id: "alm-3",
     nombre: "Depósito Córdoba",
     direccion: "Ruta 9 Km 680, Córdoba",
+    radio_cobertura_km: 50,
+    coordenadas_gps: "-31.4201, -64.1888",
     capacidad_maxima: 3500,
     es_zona_recepcion: false,
     total_ubicaciones: 180,
@@ -134,6 +142,10 @@ export default function AlmacenesPage() {
                     <div className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5">
                       <MapPin className="w-3 h-3 text-zinc-500" />
                       {alm.direccion}
+                    </div>
+                    <div className="text-[10px] text-indigo-400 font-mono mt-1 flex items-center gap-2">
+                      <span>GPS: {alm.coordenadas_gps}</span>
+                      <span>• Radio flete: {alm.radio_cobertura_km} km</span>
                     </div>
                   </div>
                 </div>

@@ -53,6 +53,9 @@ export interface Almacen {
   telefono?: string | null;
   codigo_postal?: string | null;
   pais?: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  radio_cobertura_km?: number | null;
   capacidad_maxima?: number | null;
   es_zona_recepcion: boolean;
   activo: boolean;
@@ -83,7 +86,10 @@ export interface Producto {
   precio: number;
   precio_minimo?: number | null;
   precio_maximo?: number | null;
-  cantidad_total: number;
+  cantidad_total: number; // Stock Físico Real
+  cantidad_real: number;
+  cantidad_reservada: number; // Comprometido en órdenes
+  cantidad_disponible: number; // Real - Reservado
   cantidad_minima?: number | null;
   cantidad_maxima?: number | null;
   imagen_url?: string | null;
