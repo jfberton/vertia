@@ -44,7 +44,7 @@ const STORAGE_KEY_CUSTOM_USERS = "inventrack_custom_users";
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tenants, setTenants] = useState<MultiTenantInfo[]>(MOCK_TENANTS);
   const [usersList, setUsersList] = useState<MultiTenantUser[]>(MOCK_USERS);
-  const [user, setUser] = useState<MultiTenantUser | null>(MOCK_USERS[0]); // Default to Humberto
+  const [user, setUser] = useState<MultiTenantUser | null>(null);
   const [tenant, setTenant] = useState<MultiTenantInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -84,15 +84,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           // Default initial user: Humberto
-          const defaultUser = MOCK_USERS[0];
+          const defaultUser = null;
           setUser(defaultUser);
           setTenant(null);
-          localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(defaultUser));
+          // No persistir usuario no autenticado
         }
       }
     } catch (e) {
       console.error("Error loading auth session from localStorage:", e);
-      setUser(MOCK_USERS[0]);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }

@@ -58,6 +58,21 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 
 ## 📝 4. Registro Cronológico de Decisiones y Cambios
 
+### [2026-11-18] - Implementación de Guardián de Rutas RBAC y Protección contra Accesos No Autenticados
+- **Autor / Agente:** Lead Architect (Antigravity).
+- **Problema Detectado:** Al acceder directamente a rutas internas (como `/evidencias`, `/almacenes`, etc.) sin sesión iniciada, el contexto `AuthContext` asignaba automáticamente al usuario Super Admin por defecto (`MOCK_USERS[0]`), permitiendo la navegación anónima sin pasar por el login.
+- **Solución Arquitectónica:**
+  1. **Guardián Central (`DashboardAuthGuard.tsx`):**
+     - Envuelve a todo el layout del dashboard.
+     - Si el usuario no está autenticado (`user === null`), bloquea de inmediato la carga de vistas internas y redirige a `/login?redirect=${pathname}`.
+     - Si el usuario está autenticado pero su rol no tiene permiso para la ruta (ej. Corralón intentando entrar a `/meta-admin`, o Constructora/Cliente intentando entrar a `/almacenes` o `/productos`), deniega el acceso y lo redirige a su módulo autorizado (`/productos` o `/ordenes`).
+  2. **Corrección de Inicialización en `AuthContext.tsx`:**
+     - El estado inicial de `user` es estrictamente `null`.
+     - Si no existe sesión previa en `localStorage`, no se auto-inicia sesión con Humberto ni con ningún usuario demo.
+  3. **Preservación de Destino en `LoginPage.tsx`:**
+     - Detecta el parámetro `redirect` y muestra un aviso visual de sesión requerida.
+     - Al autenticarse (por credenciales o 1-Click demo), redirige al usuario directamente al módulo que intentaba consultar si su perfil lo permite.
+
 ### [2026-11-18] - Entrega de Fase 3 (Picking y Remitos PDF) y Fase 4 (Evidencias con Compresión WebP en Cliente)
 - **Autor / Agente:** Lead Architect (Antigravity), Subagente Logística y Subagente Media/Storage.
 - **Decisiones Técnicas y Entregables:**

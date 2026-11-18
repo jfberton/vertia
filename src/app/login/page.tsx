@@ -27,6 +27,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [redirectTarget, setRedirectTarget] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const redir = params.get("redirect");
+      if (redir && redir.startsWith("/")) {
+        setRedirectTarget(redir);
+      }
+    }
+  }, []);
+
+  const resolveDestination = (defaultRoute: string) => {
+    return redirectTarget || defaultRoute;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,11 +54,11 @@ export default function LoginPage() {
         // Redirige según el tipo de empresa / rol del usuario autenticado
         const loggedUser = demoAccounts.find((d) => d.email === email);
         if (loggedUser?.tipo === "corralon") {
-          router.push("/productos");
+          router.push(resolveDestination("/productos"));
         } else if (loggedUser?.tipo === "cliente") {
-          router.push("/ordenes");
+          router.push(resolveDestination("/ordenes"));
         } else {
-          router.push("/dashboard");
+          router.push(resolveDestination("/dashboard"));
         }
       } else {
         setError(res.error || "Error al iniciar sesión");
@@ -59,11 +74,11 @@ export default function LoginPage() {
     loginAsDemoUser(userId);
     // Usuarios de corralón van directo a InvenTrack (Materiales & Stock)
     if (tipo === "corralon") {
-      router.push("/productos");
+      router.push(resolveDestination("/productos"));
     } else if (tipo === "cliente") {
-      router.push("/ordenes");
+      router.push(resolveDestination("/ordenes"));
     } else {
-      router.push("/dashboard");
+      router.push(resolveDestination("/dashboard"));
     }
   };
 
@@ -196,6 +211,16 @@ export default function LoginPage() {
                 Ingresa con tu correo corporativo o utiliza el conmutador de roles demo.
               </p>
             </div>
+
+            {redirectTarget && (
+              <div className="mb-5 p-3 rounded-lg bg-amber-950/60 border border-amber-800 text-amber-200 text-xs flex items-center gap-2">
+                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>
+                  <strong>Autenticación requerida:</strong> Inicia sesión para acceder a{" "}
+                  <span className="font-mono text-amber-300 font-semibold">{redirectTarget}</span>
+                </span>
+              </div>
+            )}
 
             {error && (
               <div className="mb-5 p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-200 text-xs flex items-center gap-2">
