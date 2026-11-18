@@ -47,8 +47,8 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 | Fase | Módulo / Tarea | Estado | Responsable |
 | :--- | :--- | :--- | :--- |
 | **0** | Configuración de entorno local, `.env.local` y pruebas base (32/32 tests) | ✅ Completado | Lead Architect |
-| **1** | Capa de Servicios Híbrida Supabase (`src/lib/services/`) con fallback a Mocks | 🟡 En Planificación | Subagente Backend / Supabase |
-| **2** | Matriz Espacial 3D Interactiva de Almacenes (Racks, Niveles y Pulmón de Recepción) | ⚪ Pendiente | Subagente Frontend UI |
+| **1** | Capa de Servicios Híbrida Supabase (`src/lib/services/`) con fallback a Mocks | ✅ Completado | Subagente Backend / Supabase |
+| **2** | Matriz Espacial 3D Interactiva de Almacenes (Racks, Niveles y Pulmón de Recepción) | ✅ Completado | Subagente Frontend UI |
 | **3** | Flujo de Picking, Transición de Dual Stock y Generador de Remitos PDF | ⚪ Pendiente | Subagente Logística |
 | **4** | Uploader de Evidencias Fotográficas con Compresión en Cliente a Supabase Storage | ⚪ Pendiente | Subagente Media/Storage |
 | **5** | Red B2B: Negociación de Excedentes y Chat de Extensión en Tiempo Real | ⚪ Pendiente | Subagente Realtime |
@@ -56,6 +56,22 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 ---
 
 ## 📝 4. Registro Cronológico de Decisiones y Cambios
+
+### [2026-11-18] - Entrega de Fase 1 (Servicios Híbridos) y Fase 2 (Matriz Espacial 3D)
+- **Autor / Agente:** Lead Architect (Antigravity), Subagente Backend (`backend-engineer`) y Subagente Frontend (`frontend-engineer`).
+- **Decisiones Técnicas y Entregables:**
+  1. **Capa de Servicios Híbrida (`src/lib/services/`):**
+     - Se crearon los servicios `productos.service.ts`, `almacenes.service.ts`, `ordenes.service.ts`, `mock-store.ts` y `supabase-helper.ts`.
+     - Implementación de resiliencia con timeout de 1200ms (`withSupabaseTimeout`): si Supabase está desconectado o sin tablas creadas, conmuta transparentemente al almacenamiento local sin bloquear la UI ni emitir errores visibles.
+     - Cumplimiento innegociable de la invariante: `stock_disponible = stock_real - stock_comprometido`.
+  2. **Matriz Espacial 3D y Zona de Recepción WMS (`src/app/(dashboard)/almacenes/` y componentes):**
+     - Nuevo motor de topología física WMS (`mock-spatial-warehouse.ts`) con estándar industrial (`P1-R02-E3-N2`).
+     - Vista isométrica 3D con transformaciones CSS (`preserve-3d`, rotación, zoom e inclinación) y vistas alternativas en Elevación y Plano 2D.
+     - Componente de Pulmón Operativo (`WarehouseReceptionCard.tsx`) con métricas en tiempo real de remitos en espera y bultos por acomodar.
+     - Inspector lateral de celdas (`WarehouseCellInspector.tsx`) y Modal de Slotting (`WarehouseSlottingModal.tsx`) para estiba guiada desde recepción hacia racks.
+  3. **Consolidación de Calidad y Pruebas:**
+     - Se integró la nueva suite automatizada en `npm test`: **51 pruebas automatizadas pasadas al 100% (0 fallos)** (32 de multi-tenant/RBAC + 19 de servicios híbridos).
+     - Compilación limpia de producción (`next build`) en las 13 rutas de la aplicación.
 
 ### [2026-11-18] - Inicialización en Notebook y Establecimiento de Gobernanza
 - **Autor / Agente:** Lead Architect (Antigravity) & Federico Bertoncini.
