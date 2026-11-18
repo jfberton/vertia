@@ -6,6 +6,7 @@
  * 3. OrdenesService: Lifecycle state progression (Pendiente -> En preparación -> Despachada -> Entregada)
  * 4. SyncMonitorService: Heartbeat, Connectivity state, Subscriptions, Forced trigger check
  * 5. OfflineQueueService: Offline mutations, Zero leakage, Reconciliation & Inventory Deficit Conflict Resolution
+ * 6. ImageCompressor & EvidenciasService: Canvas client compression, Storage bucket upload & Zero-Leakage
  */
 
 import {
@@ -23,6 +24,13 @@ import {
   syncMonitor,
   offlineQueueService,
   SyncState,
+  compressImage,
+  calculateTargetDimensions,
+  formatBytes,
+  uploadEvidencia,
+  getEvidencias,
+  validarEvidencia,
+  solicitarAjuste,
 } from "../src/lib/services";
 
 let passedTests = 0;
@@ -532,6 +540,170 @@ async function runTests() {
     "AuditoriaReconciliacion retains complete forensic log for all reconciliation events",
     `Total audit events: ${auditLogs.length}`
   );
+
+  // -------------------------------------------------------------
+  // SUITE 6: IMAGE COMPRESSOR & EVIDENCIAS SUPABASE STORAGE SERVICE
+  // -------------------------------------------------------------
+  console.log("\n\x1b[1m[Suite 6] ImageCompressor & Evidencias Supabase Storage Service\x1b[0m");
+
+  // 6.1 Proportional Dimensions Calculation
+  const landscapeDims = calculateTargetDimensions(4000, 3000, 1600, 1200);
+  assert(
+    landscapeDims.width === 1600 && landscapeDims.height === 1200,
+    "calculateTargetDimensions correctly scales landscape mobile photo to 1600x1200",
+    `Got: ${landscapeDims.width}x${landscapeDims.height}`
+  );
+
+  const portraitDims = calculateTargetDimensions(3000, 4000, 1600, 1200);
+  assert(
+    portraitDims.width === 1200 && portraitDims.height === 1600,
+    "calculateTargetDimensions preserves vertical aspect ratio within bounds (1200x1600)",
+    `Got: ${portraitDims.width}x${portraitDims.height}`
+  );
+
+  // 6.2 formatBytes utility
+  assert(
+    formatBytes(5242880) === "5 MB" || formatBytes(5242880) === "5.0 MB",
+    "formatBytes correctly formats 5MB payload",
+    `Got: ${formatBytes(5242880)}`
+  );
+  assert(
+    formatBytes(256000).includes("KB"),
+    "formatBytes correctly formats ~250 KB payload",
+    `Got: ${formatBytes(256000)}`
+  );
+
+  // 6.3 Synthetic heavy camera image compression (>90% reduction)
+  // Create a 5.2 MB synthetic blob representing a phone photo
+  const heavyPayloadSize = 5242880; // 5 MB
+  const rawBytes = new Uint8Array(heavyPayloadSize);
+  const syntheticHeavyBlob = new Blob([rawBytes], { type: "image/jpeg" });
+
+  const compressionResult = await compressImage(syntheticHeavyBlob, {
+    maxWidth: 1600,
+    maxHeight: 1200,
+    quality: 0.82,
+    preferredFormat: "image/webp",
+  });
+
+  assert(
+    compressionResult.originalSize === heavyPayloadSize,
+    "compressImage captures exact original file size (5 MB)",
+    `Original: ${compressionResult.originalSize} bytes`
+  );
+
+  assert(
+    compressionResult.compressedSize <= 300 * 1024,
+    "compressImage reduces image to ~250 KB target threshold",
+    `Compressed: ${formatBytes(compressionResult.compressedSize)} (${compressionResult.compressedSize} bytes)`
+  );
+
+  assert(
+    compressionResult.ratioPercent >= 90.0,
+    "compressImage achieves >90% bandwidth/storage quota reduction",
+    `Saved: ${compressionResult.ratioPercent}%`
+  );
+
+  assert(
+    Boolean(compressionResult.dataUrl && compressionResult.dataUrl.startsWith("data:image/")),
+    "compressImage produces valid dataUrl preview for real-time UI display"
+  );
+
+  assert(
+    compressionResult.blob instanceof Blob && compressionResult.blob.size > 0,
+    "compressImage returns a valid non-empty binary Blob"
+  );
+
+  // 6.4 Evidencias Service - Zero Leakage Isolation
+  const pinosEvidencias = await getEvidencias("tenant-los-pinos");
+  const centroEvidencias = await getEvidencias("tenant-materiales-centro");
+  const allEvidencias = await getEvidencias("all", true);
+
+  assert(
+    pinosEvidencias.length >= 2 &&
+    pinosEvidencias.every((e) => e.tenant_id === "tenant-los-pinos"),
+    "getEvidencias strictly isolates evidence cases for tenant-los-pinos",
+    `Count: ${pinosEvidencias.length}`
+  );
+
+  assert(
+    centroEvidencias.length >= 1 &&
+    centroEvidencias.every((e) => e.tenant_id === "tenant-materiales-centro"),
+    "getEvidencias strictly isolates evidence cases for tenant-materiales-centro",
+    `Count: ${centroEvidencias.length}`
+  );
+
+  assert(
+    allEvidencias.length >= pinosEvidencias.length + centroEvidencias.length,
+    "getEvidencias('all', true) returns consolidated evidence portfolio for Super Admin",
+    `Consolidated count: ${allEvidencias.length}`
+  );
+
+  // 6.5 uploadEvidencia with Automatic Compression & Hybrid Fallback
+  const uploadResp = await uploadEvidencia(syntheticHeavyBlob, {
+    folio: "VT-2001",
+    tipo: "Remito firmado",
+    titulo: "Descarga de 120 Perfiles C Galvanizados y Remito Conforme",
+    notas: "Material entregado sin roturas, remito con firma y sello del capataz en obra.",
+    tenantId: "tenant-los-pinos",
+    ubicacion: "Galpón 2 - Patio Este",
+    responsable: "Transportes El Rápido S.A.",
+  });
+
+  assert(
+    uploadResp.evidencia.folio === "VT-2001" &&
+    uploadResp.evidencia.tenant_id === "tenant-los-pinos",
+    "uploadEvidencia successfully registers evidence with tenant isolation"
+  );
+
+  assert(
+    Boolean(uploadResp.storageUrl && uploadResp.storageUrl.length > 0),
+    "uploadEvidencia generates accessible storage URL for evidence photo",
+    `URL: ${uploadResp.storageUrl.slice(0, 45)}...`
+  );
+
+  assert(
+    uploadResp.storageProvider === "supabase" || uploadResp.storageProvider === "local",
+    "uploadEvidencia respects hybrid architecture (Supabase Storage with local offline fallback)",
+    `Active provider: ${uploadResp.storageProvider}`
+  );
+
+  assert(
+    (uploadResp.evidencia.tamanoOriginal ?? 0) >= heavyPayloadSize &&
+    (uploadResp.evidencia.tamanoComprimido ?? 0) <= 300 * 1024 &&
+    (uploadResp.evidencia.ahorroPorcentaje ?? 0) >= 90,
+    "uploadEvidencia persists compression metadata (original, compressed, ratio saved)",
+    `Ahorro: ${uploadResp.evidencia.ahorroPorcentaje}%`
+  );
+
+  // Verify it appears in tenant's list and NOT in other tenants (Zero Leakage)
+  const pinosUpdated = await getEvidencias("tenant-los-pinos");
+  const centroCheck = await getEvidencias("tenant-materiales-centro");
+
+  assert(
+    pinosUpdated.some((e) => e.folio === "VT-2001"),
+    "New evidence immediately appears in tenant-los-pinos active case list"
+  );
+
+  assert(
+    !centroCheck.some((e) => e.folio === "VT-2001"),
+    "Zero Leakage verified: New evidence is not visible to tenant-materiales-centro"
+  );
+
+  // 6.6 Evidencia Lifecycle Progression
+  const validada = await validarEvidencia("VT-2001");
+  assert(
+    validada?.estado === "Validada",
+    "validarEvidencia successfully transitioned status to 'Validada'"
+  );
+
+  const conAjuste = await solicitarAjuste("VT-2001", "La firma del remito requiere aclaración");
+  assert(
+    conAjuste?.estado === "Ajuste solicitado" &&
+    conAjuste?.notasProveedor?.includes("aclaración"),
+    "solicitarAjuste transitioned status to 'Ajuste solicitado' and registered inspector note"
+  );
+
 
   // -------------------------------------------------------------
   // SUMMARY

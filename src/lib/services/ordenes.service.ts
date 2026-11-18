@@ -187,6 +187,20 @@ export class OrdenesService {
 
     return updated;
   }
+
+  /**
+   * Actualiza propiedades arbitrarias de una orden (metadatos de remito, chofer, detalles)
+   */
+  async actualizarOrden(
+    ordenId: string,
+    updates: Partial<MultiTenantOrden>
+  ): Promise<MultiTenantOrden> {
+    const updated = updateStoredOrden(ordenId, updates);
+    if (!updated) {
+      throw new Error(`Orden con ID ${ordenId} no encontrada`);
+    }
+    return updated;
+  }
 }
 
 export const ordenesService = new OrdenesService();
@@ -200,3 +214,9 @@ export const createOrden = (orden: Omit<MultiTenantOrden, "id">) =>
 
 export const actualizarEstadoOrden = (ordenId: string, nuevoEstado: string) =>
   ordenesService.actualizarEstadoOrden(ordenId, nuevoEstado);
+
+export const actualizarOrden = (
+  ordenId: string,
+  updates: Partial<MultiTenantOrden>
+) => ordenesService.actualizarOrden(ordenId, updates);
+

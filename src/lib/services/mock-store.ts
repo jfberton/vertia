@@ -8,19 +8,155 @@ import {
   MultiTenantUbicacion,
   MultiTenantOrden,
 } from "../data/mock-multi-tenant";
+import {
+  EmbarqueItem,
+  MOCK_EMBARQUE_ITEMS,
+} from "../data/mock-spatial-warehouse";
 
 const STORAGE_KEYS = {
   PRODUCTOS: "inventrack_hybrid_productos",
   ALMACENES: "inventrack_hybrid_almacenes",
   UBICACIONES: "inventrack_hybrid_ubicaciones",
   ORDENES: "inventrack_hybrid_ordenes",
+  EVIDENCIAS: "inventrack_hybrid_evidencias",
+  EMBARQUES: "inventrack_hybrid_embarques",
 } as const;
+
+export interface MultiTenantEvidencia {
+  id: string;
+  tenant_id: string;
+  folio: string;
+  tipo: string;
+  titulo: string;
+  ubicacion: string;
+  responsable: string;
+  fecha: string;
+  estado: "En validación" | "Validada" | "Ajuste solicitado" | "Incidencia";
+  coincidenciaPorcentaje: number;
+  criterios: {
+    mismoPuntoCaptura: boolean;
+    mejoraVisible: boolean;
+    conformeAlAlcance: boolean;
+  };
+  descripcionAlcance: string;
+  fotoClienteAntes: string;
+  fotoProveedorDespues: string;
+  notasProveedor: string;
+  documentoAdjunto?: string;
+  storagePath?: string;
+  storageProvider?: "supabase" | "local";
+  tamanoOriginal?: number;
+  tamanoComprimido?: number;
+  ahorroPorcentaje?: number;
+  created_at?: string;
+}
+
+export const MOCK_EVIDENCIAS: MultiTenantEvidencia[] = [
+  {
+    id: "evi-001",
+    tenant_id: "tenant-los-pinos",
+    folio: "VT-1048",
+    tipo: "Mantenimiento",
+    titulo: "Reparación y ajuste de puerta de acceso peatonal",
+    ubicacion: "Torre Norte - Piso 3 (Acceso principal)",
+    responsable: "Herrería Soluciones S.A.",
+    fecha: "Hoy, 16:18 hs",
+    estado: "En validación",
+    coincidenciaPorcentaje: 98,
+    criterios: {
+      mismoPuntoCaptura: true,
+      mejoraVisible: true,
+      conformeAlAlcance: true,
+    },
+    descripcionAlcance:
+      "Corrección de bisagras vencidas, aplicación de soldadura en marco y pintura anticorrosiva negro mate.",
+    fotoClienteAntes:
+      "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=700&q=80",
+    fotoProveedorDespues:
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=700&q=80",
+    notasProveedor:
+      "Se reemplazaron 3 pernos de bisagra de alta resistencia y se calibró la cerradura con doble cerrojo. Pintura seca.",
+    documentoAdjunto: "Reporte_Herreria_VT1048.pdf",
+    storagePath: "tenant-los-pinos/VT-1048_evidencia.webp",
+    storageProvider: "supabase",
+    tamanoOriginal: 5242880,
+    tamanoComprimido: 284120,
+    ahorroPorcentaje: 94.6,
+    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+  {
+    id: "evi-002",
+    tenant_id: "tenant-los-pinos",
+    folio: "VT-1049",
+    tipo: "Descarga de material en obra",
+    titulo: "Descarga y estiba de Cemento Loma Negra (100 bolsas)",
+    ubicacion: "Bodega Central - Sector Obra Torre Sur",
+    responsable: "Corralón Los Pinos S.R.L.",
+    fecha: "Hoy, 14:30 hs",
+    estado: "En validación",
+    coincidenciaPorcentaje: 95,
+    criterios: {
+      mismoPuntoCaptura: true,
+      mejoraVisible: true,
+      conformeAlAlcance: true,
+    },
+    descripcionAlcance:
+      "Entrega acordada mediante extensión de stock físico autorizada. Palletizado protegido de humedad y remito firmado.",
+    fotoClienteAntes:
+      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=700&q=80",
+    fotoProveedorDespues:
+      "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=700&q=80",
+    notasProveedor:
+      "Descargado con autoelevador en zona techada. Remito nro 0004-9812 firmado por el capataz Ing. Rossi.",
+    documentoAdjunto: "Remito_Firmado_VT1049.pdf",
+    storagePath: "tenant-los-pinos/VT-1049_remito.webp",
+    storageProvider: "supabase",
+    tamanoOriginal: 4890000,
+    tamanoComprimido: 265000,
+    ahorroPorcentaje: 94.5,
+    created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
+  },
+  {
+    id: "evi-003",
+    tenant_id: "tenant-materiales-centro",
+    folio: "VT-0112",
+    tipo: "Estado previo/posterior",
+    titulo: "Reparación de grieta y resane en muro de estacionamiento",
+    ubicacion: "Torre Norte - Estacionamiento (Nivel -1)",
+    responsable: "Albañilería Alfa",
+    fecha: "Ayer, 17:20 hs",
+    estado: "Incidencia",
+    coincidenciaPorcentaje: 62,
+    criterios: {
+      mismoPuntoCaptura: true,
+      mejoraVisible: false,
+      conformeAlAlcance: false,
+    },
+    descripcionAlcance:
+      "Apertura de fisura en 'V', sellado con masilla elastomérica y dos manos de pintura epoxi gris.",
+    fotoClienteAntes:
+      "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=700&q=80",
+    fotoProveedorDespues:
+      "https://images.unsplash.com/photo-1584467735871-8e85353a8413?auto=format&fit=crop&w=700&q=80",
+    notasProveedor:
+      "Se aplicó resane rápido, pendiente lijado final por humedad ambiente.",
+    documentoAdjunto: "Detalle_Fisura_Alfa.pdf",
+    storagePath: "tenant-materiales-centro/VT-0112_inspeccion.webp",
+    storageProvider: "local",
+    tamanoOriginal: 6100000,
+    tamanoComprimido: 290000,
+    ahorroPorcentaje: 95.2,
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+  },
+];
 
 // Cache en memoria para SSR o entornos sin window
 let memoryCacheProductos: MultiTenantProducto[] = [...MOCK_PRODUCTOS];
 let memoryCacheAlmacenes: MultiTenantAlmacen[] = [...MOCK_ALMACENES];
 let memoryCacheUbicaciones: MultiTenantUbicacion[] = [...MOCK_UBICACIONES];
 let memoryCacheOrdenes: MultiTenantOrden[] = [...MOCK_ORDENES];
+let memoryCacheEvidencias: MultiTenantEvidencia[] = [...MOCK_EVIDENCIAS];
+let memoryCacheEmbarques: EmbarqueItem[] = [...MOCK_EMBARQUE_ITEMS];
 
 function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof localStorage !== "undefined";
@@ -268,3 +404,140 @@ export function updateStoredOrden(
   saveToStorage(STORAGE_KEYS.ORDENES, updated);
   return updatedItem;
 }
+
+// ---------------------------------------------------------------------------
+// EVIDENCIAS
+// ---------------------------------------------------------------------------
+export function getStoredEvidencias(
+  tenantId: string,
+  isSuperAdmin = false
+): MultiTenantEvidencia[] {
+  const all = isBrowser()
+    ? loadFromStorage<MultiTenantEvidencia>(
+        STORAGE_KEYS.EVIDENCIAS,
+        memoryCacheEvidencias
+      )
+    : memoryCacheEvidencias;
+
+  if (isSuperAdmin && tenantId === "all") {
+    return [...all];
+  }
+  return all.filter((e) => e.tenant_id === tenantId);
+}
+
+export function getAllStoredEvidencias(): MultiTenantEvidencia[] {
+  return isBrowser()
+    ? loadFromStorage<MultiTenantEvidencia>(
+        STORAGE_KEYS.EVIDENCIAS,
+        memoryCacheEvidencias
+      )
+    : memoryCacheEvidencias;
+}
+
+export function saveStoredEvidencia(
+  evidencia: MultiTenantEvidencia
+): MultiTenantEvidencia {
+  const all = getAllStoredEvidencias();
+  const index = all.findIndex((e) => e.id === evidencia.id || e.folio === evidencia.folio);
+  let updated: MultiTenantEvidencia[];
+
+  if (index >= 0) {
+    updated = [...all];
+    updated[index] = evidencia;
+  } else {
+    updated = [evidencia, ...all];
+  }
+
+  memoryCacheEvidencias = updated;
+  saveToStorage(STORAGE_KEYS.EVIDENCIAS, updated);
+  return evidencia;
+}
+
+export function updateStoredEvidencia(
+  idOrFolio: string,
+  updates: Partial<MultiTenantEvidencia>
+): MultiTenantEvidencia | null {
+  const all = getAllStoredEvidencias();
+  const index = all.findIndex((e) => e.id === idOrFolio || e.folio === idOrFolio);
+  if (index === -1) return null;
+
+  const updatedItem: MultiTenantEvidencia = {
+    ...all[index],
+    ...updates,
+  };
+
+  const updated = [...all];
+  updated[index] = updatedItem;
+  memoryCacheEvidencias = updated;
+  saveToStorage(STORAGE_KEYS.EVIDENCIAS, updated);
+  return updatedItem;
+}
+
+// ---------------------------------------------------------------------------
+// EMBARQUES (PULMÓN DE SALIDA / ZONA DE EXPEDICIÓN)
+// ---------------------------------------------------------------------------
+export function getStoredEmbarques(
+  tenantId?: string,
+  isSuperAdmin = false
+): EmbarqueItem[] {
+  const all = isBrowser()
+    ? loadFromStorage<EmbarqueItem>(STORAGE_KEYS.EMBARQUES, memoryCacheEmbarques)
+    : memoryCacheEmbarques;
+
+  if (isSuperAdmin && (!tenantId || tenantId === "all")) {
+    return [...all];
+  }
+  if (!tenantId || tenantId === "all") {
+    return [...all];
+  }
+  return all.filter((e) => e.tenant_id === tenantId);
+}
+
+export function getAllStoredEmbarques(): EmbarqueItem[] {
+  return isBrowser()
+    ? loadFromStorage<EmbarqueItem>(STORAGE_KEYS.EMBARQUES, memoryCacheEmbarques)
+    : memoryCacheEmbarques;
+}
+
+export function saveStoredEmbarque(embarque: EmbarqueItem): EmbarqueItem {
+  const all = getAllStoredEmbarques();
+  const index = all.findIndex(
+    (e) => e.id === embarque.id || (e.folio && e.folio === embarque.folio)
+  );
+  let updated: EmbarqueItem[];
+
+  if (index >= 0) {
+    updated = [...all];
+    updated[index] = { ...updated[index], ...embarque };
+  } else {
+    updated = [embarque, ...all];
+  }
+
+  memoryCacheEmbarques = updated;
+  saveToStorage(STORAGE_KEYS.EMBARQUES, updated);
+  return embarque;
+}
+
+export function updateStoredEmbarque(
+  idOrFolio: string,
+  updates: Partial<EmbarqueItem>
+): EmbarqueItem | null {
+  const all = getAllStoredEmbarques();
+  const index = all.findIndex(
+    (e) => e.id === idOrFolio || e.folio === idOrFolio
+  );
+  if (index === -1) return null;
+
+  const updatedItem: EmbarqueItem = {
+    ...all[index],
+    ...updates,
+  };
+
+  const updated = [...all];
+  updated[index] = updatedItem;
+  memoryCacheEmbarques = updated;
+  saveToStorage(STORAGE_KEYS.EMBARQUES, updated);
+  return updatedItem;
+}
+
+

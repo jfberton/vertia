@@ -15,3 +15,5 @@ export * from "./ordenes.service";
 export * from "./mock-store";
 export * from "./sync-monitor.service";
 export * from "./offline-queue.service";
+export * from "./image-compressor";
+export * from "./evidencias.service";

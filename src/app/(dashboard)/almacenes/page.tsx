@@ -46,6 +46,10 @@ import {
   getSpatialCellsForWarehouse,
   calculateCellStatus,
 } from "@/lib/data/mock-spatial-warehouse";
+import {
+  getStoredEmbarques,
+  updateStoredEmbarque,
+} from "@/lib/services/mock-store";
 import { WarehouseReceptionCard } from "@/components/warehouses/WarehouseReceptionCard";
 import { WarehouseEmbarqueCard } from "@/components/warehouses/WarehouseEmbarqueCard";
 import { WarehouseMatrix2D } from "@/components/warehouses/WarehouseMatrix2D";
@@ -183,7 +187,9 @@ export default function AlmacenesPage() {
   // ==========================================
   // 3. ZONA DE EMBARQUE / PULMÓN DE SALIDA
   // ==========================================
-  const [embarqueItems, setEmbarqueItems] = useState<EmbarqueItem[]>(MOCK_EMBARQUE_ITEMS);
+  const [embarqueItems, setEmbarqueItems] = useState<EmbarqueItem[]>(() =>
+    getStoredEmbarques()
+  );
 
   const currentEmbarqueItems = useMemo(() => {
     if (!almacenSeleccionado) return [];
@@ -195,6 +201,7 @@ export default function AlmacenesPage() {
   }, [embarqueItems, almacenSeleccionado]);
 
   const handleEmbarqueStatusChange = (itemId: string, newStatus: EmbarqueEstado) => {
+    updateStoredEmbarque(itemId, { estado: newStatus });
     setEmbarqueItems((prev) =>
       prev.map((i) => (i.id === itemId ? { ...i, estado: newStatus } : i))
     );

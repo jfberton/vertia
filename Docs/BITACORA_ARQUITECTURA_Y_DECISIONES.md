@@ -50,13 +50,30 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 | **1** | Capa de Servicios Híbrida Supabase (`src/lib/services/`) con fallback a Mocks | ✅ Completado | Subagente Backend / Supabase |
 | **2** | Matriz Espacial 2D Industrial y Zona de Embarque (Staging) | ✅ Completado | Subagente Frontend UI |
 | **2.1** | Monitor de Conectividad Heartbeat y Protocolo de Reconciliación de Stock Offline | ✅ Completado | Subagente Backend |
-| **3** | Flujo de Picking, Transición de Dual Stock y Generador de Remitos PDF | 🟡 En Ejecución | Subagente Logística |
-| **4** | Uploader de Evidencias Fotográficas con Compresión en Cliente a Supabase Storage | ⚪ Pendiente | Subagente Media/Storage |
+| **3** | Flujo de Picking, Transición de Dual Stock y Generador de Remitos PDF | ✅ Completado | Subagente Logística |
+| **4** | Uploader de Evidencias Fotográficas con Compresión en Cliente a Supabase Storage | ✅ Completado | Subagente Media/Storage |
 | **5** | Red B2B: Negociación de Excedentes y Chat de Extensión en Tiempo Real | ⚪ Pendiente | Subagente Realtime |
 
 ---
 
 ## 📝 4. Registro Cronológico de Decisiones y Cambios
+
+### [2026-11-18] - Entrega de Fase 3 (Picking y Remitos PDF) y Fase 4 (Evidencias con Compresión WebP en Cliente)
+- **Autor / Agente:** Lead Architect (Antigravity), Subagente Logística y Subagente Media/Storage.
+- **Decisiones Técnicas y Entregables:**
+  1. **Flujo de Picking, Zona de Embarque y Remitos Oficiales PDF (`ordenes/page.tsx`):**
+     - Se creó `PickingModal.tsx`: recolección guiada por coordenadas WMS (`Pasillo` -> `Rack` -> `Nivel`), lotes, bultos y peso kg acumulado. Al completar la recolección, traslada automáticamente la mercadería al Pulmón de Salida (**Zona de Embarque**).
+     - Se creó `RemitoPdfModal.tsx`: documento oficial de entrega con formato legal argentino (Formulario R - Código 091: "DOCUMENTO NO VÁLIDO COMO FACTURA"), datos del corralón, cliente, chofer, patente, código QR de verificación, casillas reglamentarias de firma y estilos `@media print` optimizados para salida en hoja A4 limpia.
+     - Acción "Confirmar Despacho / Salida de Camión": avanza la orden a `En camino` / `Despachada`, descuenta el `Stock Real` y libera el `Stock Comprometido` garantizando la invariante de Dual Stock.
+  2. **Compresión Client-Side y Supabase Storage (`evidencias/page.tsx` y `image-compressor.ts`):**
+     - Motor de compresión en Canvas HTML5 (`image-compressor.ts`) que procesa fotos de celular de 4 a 10 MB, redimensiona a 1600x1200 px y exporta a WebP/JPEG al 82% de calidad, reduciendo el peso a **~250-280 KB (>90% de ahorro de cuota)** antes de la transferencia.
+     - Servicio `evidencias.service.ts`: subida directa al bucket seguro `evidencias` en Supabase Storage con fallback local tolerante a desconexión y aislamiento multi-tenant estricto.
+     - Modal "Subir Nueva Evidencia / Remito Firmado" con input de cámara móvil, comparación de peso en tiempo real y visor interactivo.
+  3. **Control de Calidad:**
+     - Suite automatizada ampliada a **90 verificaciones pasando al 100% (0 fallos)** (32 de autenticación/multi-tenant + 58 de servicios híbridos, sync, cola offline y compresión).
+     - `next build` limpio con Turbopack en las 13 rutas estáticas.
+
+### [2026-11-18] - Entrega de Paso 1 (Matriz 2D y Zona de Embarque) y Paso 2 (Monitor de Red y Reconciliación Offline)
 
 ### [2026-11-18] - Entrega de Paso 1 (Matriz 2D y Zona de Embarque) y Paso 2 (Monitor de Red y Reconciliación Offline)
 - **Autor / Agente:** Lead Architect (Antigravity), Subagente Frontend y Subagente Backend.

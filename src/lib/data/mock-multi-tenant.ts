@@ -88,6 +88,14 @@ export interface MultiTenantDetalleOrden {
   cantidadAutorizadaExtension: number;
   unidad: string;
   estadoItem: "Completo" | "Extensión requerida" | "Extensión autorizada";
+  pasillo?: string;
+  rack?: number;
+  estanteria?: number;
+  nivel?: number;
+  codigo_visual?: string;
+  lote?: string;
+  peso_kg_unitario?: number;
+  peso_total_kg?: number;
 }
 
 export interface MultiTenantOrden {
@@ -102,6 +110,12 @@ export interface MultiTenantOrden {
   estado: "Por cotizar" | "Asignada" | "En preparación" | "En camino" | "Entregada";
   distanciaKm: number;
   detalles: MultiTenantDetalleOrden[];
+  remito_numero?: string;
+  chofer_asignado?: string;
+  dni_chofer?: string;
+  vehiculo_asignado?: string;
+  patente_asignada?: string;
+  zona_embarque?: string;
 }
 
 // ==========================================

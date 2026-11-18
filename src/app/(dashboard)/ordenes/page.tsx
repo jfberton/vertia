@@ -21,6 +21,9 @@ import {
   MapPin,
   Building2,
   Filter,
+  FileText,
+  Printer,
+  Sparkles,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +35,15 @@ import {
   MultiTenantOrden,
   MOCK_TENANTS,
 } from "@/lib/data/mock-multi-tenant";
+import { ordenesService } from "@/lib/services/ordenes.service";
+import { productosService } from "@/lib/services/productos.service";
+import {
+  saveStoredEmbarque,
+  updateStoredEmbarque,
+  getStoredOrdenes,
+} from "@/lib/services/mock-store";
+import { PickingModal, PickingSummary } from "@/components/orders/PickingModal";
+import { RemitoPdfModal } from "@/components/orders/RemitoPdfModal";
 
 export default function OrdenesPage() {
   const { user, tenant, allTenants } = useAuth();
@@ -41,8 +53,26 @@ export default function OrdenesPage() {
   const [solicitudes, setSolicitudes] = useState<MultiTenantOrden[]>(MOCK_ORDENES);
   const [solicitudActivaId, setSolicitudActivaId] = useState<string>("");
 
+  // Modales
   const [modalChatAbierto, setModalChatAbierto] = useState(false);
   const [modalNuevaOrden, setModalNuevaOrden] = useState(false);
+  const [modalPickingAbierto, setModalPickingAbierto] = useState(false);
+  const [modalRemitoAbierto, setModalRemitoAbierto] = useState(false);
+  const [despachando, setDespachando] = useState(false);
+
+  // Notificación Toast
+  const [toastNotificacion, setToastNotificacion] = useState<{
+    message: string;
+    type: "success" | "info";
+  } | null>(null);
+
+  const mostrarToast = (message: string, type: "success" | "info" = "success") => {
+    setToastNotificacion({ message, type });
+    setTimeout(() => {
+      setToastNotificacion(null);
+    }, 5000);
+  };
+
   const [mensajesChat, setMensajesChat] = useState<{ remitente: string; texto: string; hora: string }[]>([
     {
       remitente: "Operador VERTIA",
@@ -68,6 +98,21 @@ export default function OrdenesPage() {
     }
     return user?.tenant_id || "tenant-los-pinos";
   }, [isSuperAdmin, superAdminTenantFilter, user?.tenant_id]);
+
+  // Sincronizar órdenes desde el servicio híbrido al montar o cambiar filtro
+  useEffect(() => {
+    async function cargarOrdenes() {
+      try {
+        const ords = await ordenesService.getOrdenes(effectiveTenantId, isSuperAdmin);
+        if (ords && ords.length > 0) {
+          setSolicitudes(ords);
+        }
+      } catch {
+        // Fallback transparente a datos de memoria
+      }
+    }
+    cargarOrdenes();
+  }, [effectiveTenantId, isSuperAdmin]);
 
   // Filtered orders by tenant
   const solicitudesFiltradas = useMemo(() => {
@@ -135,6 +180,7 @@ export default function OrdenesPage() {
     );
 
     setExtensionConfirmada(true);
+    mostrarToast("Extensión de stock autorizada. La orden está lista para el picking.", "success");
   };
 
   const handleCrearOrden = (e: React.FormEvent) => {
@@ -178,15 +224,204 @@ export default function OrdenesPage() {
     setNuevoCliente("");
     setNuevoProyecto("");
     setNuevoFolio(`VT-${Math.floor(1000 + Math.random() * 9000)}`);
+    mostrarToast(`Solicitud ${nuevaSol.folio} creada y asignada con éxito.`, "success");
   };
 
-  const getTenantName = (tId: string) => {
-    const found = allTenants.find((t) => t.id === tId) || MOCK_TENANTS.find((t) => t.id === tId);
-    return found?.nombre || tId;
+  // ==========================================
+  // COMPLETAR PICKING Y TRASLADAR A EMBARQUE
+  // ==========================================
+  const handleCompletarPicking = async (orderId: string, summary: PickingSummary) => {
+    if (!solicitudActiva) return;
+
+    const digits = solicitudActiva.folio.replace(/\D/g, "");
+    const sufijo = digits ? digits.padStart(8, "0") : "00004921";
+    const remitoOficial = `R-0001-${sufijo}`;
+
+    const chofer = "Ramón González";
+    const dniChofer = "28.491.802";
+    const vehiculo = "Mercedes-Benz 1634 Chasis con Cabina";
+    const patente = "AB-492-CD";
+
+    // 1. Crear / Registrar ítem en Pulmón de Salida (Zona de Embarque)
+    saveStoredEmbarque({
+      id: `emb-${solicitudActiva.id}`,
+      almacen_id: "alm-pinos-central",
+      tenant_id: solicitudActiva.tenant_id,
+      folio: solicitudActiva.folio,
+      cliente: solicitudActiva.cliente,
+      destino_obra: solicitudActiva.proyectoUbicacion,
+      chofer_asignado: `${chofer} (${vehiculo} - Dominio ${patente})`,
+      bultos: summary.totalBultos,
+      peso_kg: summary.totalPesoKg,
+      hora_limite_salida: "16:30 hs",
+      estado: "Listo para cargar",
+      items_resumen: `${summary.totalBultos} bultos (${solicitudActiva.detalles
+        .map((d) => `${d.cantidadSolicitada} ${d.unidad} ${d.material}`)
+        .join(", ")})`,
+      muelle_embarque: summary.muelleSalida,
+      prioridad: "alta",
+      remito_numero: remitoOficial,
+      fecha_hora_preparado: "Hoy, hace instantes",
+    });
+
+    // 2. Persistir actualización de orden a 'En preparación' con datos de remito
+    try {
+      await ordenesService.actualizarOrden(orderId, {
+        estado: "En preparación",
+        remito_numero: remitoOficial,
+        chofer_asignado: chofer,
+        dni_chofer: dniChofer,
+        vehiculo_asignado: vehiculo,
+        patente_asignada: patente,
+        zona_embarque: summary.muelleSalida,
+      });
+    } catch {
+      // Continuar con actualización en memoria
+    }
+
+    // 3. Actualizar estado local
+    setSolicitudes((prev) =>
+      prev.map((s) => {
+        if (s.id === orderId) {
+          return {
+            ...s,
+            estado: "En preparación",
+            remito_numero: remitoOficial,
+            chofer_asignado: chofer,
+            dni_chofer: dniChofer,
+            vehiculo_asignado: vehiculo,
+            patente_asignada: patente,
+            zona_embarque: summary.muelleSalida,
+          };
+        }
+        return s;
+      })
+    );
+
+    mostrarToast(
+      `¡Picking completado! ${summary.totalBultos} bultos trasladados a Pulmón de Salida (${summary.muelleSalida}). Remito ${remitoOficial} generado.`,
+      "success"
+    );
+  };
+
+  // ==========================================
+  // CONFIRMAR DESPACHO / SALIDA DE CAMIÓN
+  // ==========================================
+  const handleConfirmarDespacho = async () => {
+    if (!solicitudActiva || despachando) return;
+
+    setDespachando(true);
+
+    try {
+      // 1. Descontar simultáneamente el Stock Real y liberar el Stock Comprometido
+      // Invocando updateStock de ProductosService
+      const tenantProds = await productosService.getProductos(solicitudActiva.tenant_id);
+
+      for (const det of solicitudActiva.detalles) {
+        const matchingProd = tenantProds.find(
+          (p) =>
+            p.codigo_barras === det.codigo ||
+            p.nombre.toLowerCase().includes(det.material.toLowerCase())
+        );
+
+        if (matchingProd) {
+          const qty = det.cantidadSolicitada;
+          const newStockReal = Math.max(0, matchingProd.stock_real - qty);
+          const newStockComprometido = Math.max(0, matchingProd.stock_comprometido - qty);
+
+          await productosService.updateStock(matchingProd.id, newStockReal, newStockComprometido);
+        }
+      }
+
+      // 2. Avanzar el estado de la orden a 'En camino' / 'Despachada'
+      await ordenesService.actualizarEstadoOrden(solicitudActiva.id, "En camino");
+
+      // 3. Actualizar el estado del embarque en el muelle de expedición
+      updateStoredEmbarque(solicitudActiva.folio, { estado: "Despachado" });
+
+      // 4. Actualizar el estado en el componente
+      setSolicitudes((prev) =>
+        prev.map((s) => (s.id === solicitudActiva.id ? { ...s, estado: "En camino" } : s))
+      );
+
+      mostrarToast(
+        `¡Despacho Confirmado! Camión en camino hacia la obra. Stock Real descontado y Stock Comprometido liberado en galpón.`,
+        "success"
+      );
+    } catch (err) {
+      console.error("Error al despachar orden:", err);
+      mostrarToast("Ocurrió un error al procesar el despacho.", "info");
+    } finally {
+      setDespachando(false);
+    }
+  };
+
+  const getStatusBadge = (estado: MultiTenantOrden["estado"]) => {
+    switch (estado) {
+      case "Asignada":
+        return (
+          <Badge className="text-[10px] font-semibold bg-blue-50 text-blue-700 border-blue-200">
+            <Clock className="w-3 h-3 mr-1" />
+            Asignada
+          </Badge>
+        );
+      case "En preparación":
+        return (
+          <Badge className="text-[10px] font-semibold bg-amber-50 text-amber-800 border-amber-300">
+            <PackageCheck className="w-3 h-3 mr-1 text-amber-600" />
+            En Embarque (Listo)
+          </Badge>
+        );
+      case "En camino":
+        return (
+          <Badge className="text-[10px] font-semibold bg-emerald-50 text-emerald-800 border-emerald-300">
+            <Truck className="w-3 h-3 mr-1 text-emerald-600" />
+            En Camino (Despachada)
+          </Badge>
+        );
+      case "Entregada":
+        return (
+          <Badge className="text-[10px] font-semibold bg-slate-100 text-slate-700 border-slate-300">
+            <CheckCircle2 className="w-3 h-3 mr-1 text-slate-500" />
+            Entregada
+          </Badge>
+        );
+      case "Por cotizar":
+      default:
+        return (
+          <Badge className="text-[10px] font-semibold bg-purple-50 text-purple-700 border-purple-200">
+            Por cotizar
+          </Badge>
+        );
+    }
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Toast Notification Flotante */}
+      {toastNotificacion && (
+        <div className="fixed bottom-5 right-5 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div
+            className={`p-4 rounded-xl shadow-xl border flex items-center gap-3 text-xs font-semibold ${
+              toastNotificacion.type === "success"
+                ? "bg-slate-900 text-white border-slate-800"
+                : "bg-indigo-900 text-white border-indigo-800"
+            }`}
+          >
+            <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <span>{toastNotificacion.message}</span>
+            <button
+              onClick={() => setToastNotificacion(null)}
+              className="text-slate-400 hover:text-white ml-2"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
@@ -196,10 +431,10 @@ export default function OrdenesPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900">
-                Gestión de Solicitudes, Pedidos & Negociación de Stock
+                Flujo Operativo de Órdenes, Picking & Despacho
               </h1>
               <p className="text-xs text-slate-500">
-                Coordinación de pedidos con corralones asociados y solicitud de extensión de stock físico en tiempo real.
+                Gestión de pedidos, recolección guiada por celda WMS, traslado a zona de embarque y remitos oficiales.
               </p>
             </div>
           </div>
@@ -281,17 +516,7 @@ export default function OrdenesPage() {
                       <span className="font-mono text-xs font-bold text-slate-900">
                         {sol.folio}
                       </span>
-                      <Badge
-                        className={`text-[10px] font-semibold border ${
-                          sol.estado === "Asignada"
-                            ? "bg-blue-50 text-blue-700 border-blue-200"
-                            : sol.estado === "En preparación"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : "bg-amber-50 text-amber-700 border-amber-200"
-                        }`}
-                      >
-                        {sol.estado}
-                      </Badge>
+                      {getStatusBadge(sol.estado)}
                     </div>
 
                     <div className="font-semibold text-slate-800 text-xs line-clamp-1">
@@ -299,9 +524,9 @@ export default function OrdenesPage() {
                     </div>
 
                     <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-slate-400" />
-                        {sol.corralonAsignado}
+                      <span className="flex items-center gap-1 truncate max-w-[170px]">
+                        <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate">{sol.corralonAsignado}</span>
                       </span>
                       <span className="flex items-center gap-1 font-semibold text-slate-700">
                         <MapPin className="w-3 h-3 text-indigo-600" />
@@ -315,11 +540,12 @@ export default function OrdenesPage() {
           </div>
         </div>
 
-        {/* Columna Derecha: Detalle de Solicitud & Negociación de Stock (7 columnas) */}
+        {/* Columna Derecha: Detalle de Solicitud, Picking, Embarque y Despacho (7 columnas) */}
         <div className="lg:col-span-7 space-y-4">
           {solicitudActiva ? (
             <Card className="bg-white border-slate-200 shadow-sm p-5 rounded-xl space-y-5">
-              <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              {/* Header de la Orden Seleccionada */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-base font-extrabold text-slate-900 font-mono">
@@ -328,12 +554,13 @@ export default function OrdenesPage() {
                     <Badge variant="outline" className="text-[10px] border-slate-200 text-slate-600">
                       {solicitudActiva.tipo}
                     </Badge>
+                    {getStatusBadge(solicitudActiva.estado)}
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
                     Cliente: <strong className="text-slate-800">{solicitudActiva.cliente}</strong> • Obra: {solicitudActiva.proyectoUbicacion}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <span className="text-[11px] text-slate-400 block">Corralón Asignado</span>
                   <span className="text-xs font-bold text-slate-800">
                     {solicitudActiva.corralonAsignado}
@@ -341,11 +568,91 @@ export default function OrdenesPage() {
                 </div>
               </div>
 
+              {/* BANNER ESTACIONAL: ZONA DE EMBARQUE (Si la orden está En preparación o En camino) */}
+              {solicitudActiva.estado === "En preparación" && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-indigo-50 border border-amber-200/90 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                      <PackageCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>Mercadería Preparada en Pulmón de Salida (Zona de Embarque)</span>
+                    </div>
+                    <Badge className="bg-amber-100 text-amber-800 border-amber-300 text-[10px] font-semibold">
+                      Listo para Cargar
+                    </Badge>
+                  </div>
+                  <p className="text-slate-700 text-[11px] leading-relaxed">
+                    El picking guiado fue completado con éxito. Los bultos se encuentran en el{" "}
+                    <strong>{solicitudActiva.zona_embarque || "Muelle Salida 1 - Grúa Autopropulsada"}</strong>.
+                    El remito oficial <strong>{solicitudActiva.remito_numero || "R-0001-00004921"}</strong> ya fue generado y está listo para ser firmado por el chofer.
+                  </p>
+                  <div className="pt-2 flex flex-wrap items-center gap-2">
+                    <Button
+                      onClick={() => setModalRemitoAbierto(true)}
+                      variant="outline"
+                      size="sm"
+                      className="bg-white text-xs border-amber-300 text-amber-900 hover:bg-amber-100 font-semibold h-8"
+                    >
+                      <FileText className="w-3.5 h-3.5 mr-1 text-amber-700" />
+                      Ver Remito de Entrega Oficial
+                    </Button>
+                    <Button
+                      disabled={despachando}
+                      onClick={handleConfirmarDespacho}
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold h-8 shadow-xs"
+                    >
+                      <Truck className="w-3.5 h-3.5 mr-1.5" />
+                      {despachando ? "Procesando salida..." : "Confirmar Despacho / Salida de Camión"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* BANNER EN CAMINO (Despacho completado) */}
+              {solicitudActiva.estado === "En camino" && (
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Orden Despachada — En Tránsito hacia la Obra</span>
+                    </div>
+                    <Badge className="bg-emerald-600 text-white border-transparent text-[10px] font-bold">
+                      Stock Descontado
+                    </Badge>
+                  </div>
+                  <p className="text-emerald-800 text-[11px] leading-relaxed">
+                    El transporte ya partió del corralón hacia <strong>{solicitudActiva.proyectoUbicacion}</strong>.
+                    El stock físico real fue descontado y el stock comprometido fue liberado en el inventario.
+                  </p>
+                  <div className="pt-1 flex items-center gap-2">
+                    <Button
+                      onClick={() => setModalRemitoAbierto(true)}
+                      size="sm"
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold h-8 shadow-xs"
+                    >
+                      <Printer className="w-3.5 h-3.5 mr-1.5" />
+                      Imprimir / Descargar Remito de Entrega
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Listado de Materiales y Comparativa Real vs Disponible */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Desglose de Materiales & Cobertura de Stock
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Desglose de Materiales & Cobertura de Stock
+                  </h4>
+                  {solicitudActiva.estado === "Asignada" && (
+                    <Button
+                      onClick={() => setModalPickingAbierto(true)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold h-7 px-3 shadow-2xs"
+                    >
+                      <PackageCheck className="w-3.5 h-3.5 mr-1.5" />
+                      Iniciar Picking Guiado
+                    </Button>
+                  )}
+                </div>
 
                 {solicitudActiva.detalles.map((det) => {
                   const necesitaExtension =
@@ -450,11 +757,11 @@ export default function OrdenesPage() {
               </div>
 
               {/* Acciones Finales */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="text-xs text-slate-500">
                   Radio logístico: <strong className="text-slate-800">{solicitudActiva.distanciaKm} km</strong> de distancia.
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     onClick={() => setModalChatAbierto(true)}
                     variant="outline"
@@ -462,15 +769,44 @@ export default function OrdenesPage() {
                     className="text-xs border-slate-200 text-slate-700"
                   >
                     <MessageSquare className="w-3.5 h-3.5 mr-1 text-slate-500" />
-                    Mensajería de Pedido
+                    Mensajería
                   </Button>
+
+                  {/* Botón Ver Remito */}
                   <Button
+                    onClick={() => setModalRemitoAbierto(true)}
+                    variant="outline"
                     size="sm"
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                    className="text-xs border-slate-300 text-slate-800 font-semibold"
                   >
-                    <Truck className="w-3.5 h-3.5 mr-1" />
-                    Emitir Remito de Despacho
+                    <FileText className="w-3.5 h-3.5 mr-1 text-slate-600" />
+                    Ver Remito de Entrega
                   </Button>
+
+                  {/* Botón Iniciar Picking (si Asignada) */}
+                  {solicitudActiva.estado === "Asignada" && (
+                    <Button
+                      onClick={() => setModalPickingAbierto(true)}
+                      size="sm"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
+                    >
+                      <PackageCheck className="w-3.5 h-3.5 mr-1" />
+                      Iniciar Picking
+                    </Button>
+                  )}
+
+                  {/* Botón Confirmar Despacho (si En preparación) */}
+                  {solicitudActiva.estado === "En preparación" && (
+                    <Button
+                      disabled={despachando}
+                      onClick={handleConfirmarDespacho}
+                      size="sm"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs"
+                    >
+                      <Truck className="w-3.5 h-3.5 mr-1" />
+                      {despachando ? "Despachando..." : "Confirmar Despacho / Salida Camión"}
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>
@@ -481,6 +817,32 @@ export default function OrdenesPage() {
           )}
         </div>
       </div>
+
+      {/* Modal Guiado de Picking para Operarios de Depósito */}
+      {solicitudActiva && (
+        <PickingModal
+          isOpen={modalPickingAbierto}
+          onClose={() => setModalPickingAbierto(false)}
+          order={solicitudActiva}
+          onCompletePicking={handleCompletarPicking}
+        />
+      )}
+
+      {/* Modal Oficial de Remito de Entrega / Despacho en PDF */}
+      {solicitudActiva && (
+        <RemitoPdfModal
+          isOpen={modalRemitoAbierto}
+          onClose={() => setModalRemitoAbierto(false)}
+          order={solicitudActiva}
+          transportInfo={{
+            chofer: solicitudActiva.chofer_asignado || "Ramón González",
+            dni: solicitudActiva.dni_chofer || "28.491.802",
+            vehiculo: solicitudActiva.vehiculo_asignado || "Mercedes-Benz 1634 Chasis con Cabina",
+            patente: solicitudActiva.patente_asignada || "AB-492-CD",
+            muelle: solicitudActiva.zona_embarque || "Muelle Salida 1 - Grúa Autopropulsada",
+          }}
+        />
+      )}
 
       {/* Modal Interactivo de Chat & Negociación de Extensión de Stock */}
       {modalChatAbierto && (
