@@ -14,6 +14,7 @@ import {
   createProducto,
   updateStock,
   togglePublicacionRed,
+  setCupoDisponible,
   getAlmacenes,
   getUbicaciones,
   createAlmacen,
@@ -21,6 +22,16 @@ import {
   getOrdenes,
   createOrden,
   actualizarEstadoOrden,
+  asignarCorralonAOrden,
+  emitirPresupuesto,
+  aceptarPresupuesto,
+  getStoredObras,
+  saveStoredObra,
+  getStoredProfesionales,
+  saveStoredProfesional,
+  getStoredSolicitudesServicios,
+  saveStoredSolicitudServicio,
+  updateStoredSolicitudServicio,
   syncMonitor,
   offlineQueueService,
   SyncState,
@@ -702,6 +713,177 @@ async function runTests() {
     conAjuste?.estado === "Ajuste solicitado" &&
     conAjuste?.notasProveedor?.includes("aclaración"),
     "solicitarAjuste transitioned status to 'Ajuste solicitado' and registered inspector note"
+  );
+
+  // -------------------------------------------------------------
+  // TEST SUITE 7: COMMERCIAL AVAILABLE QUOTA & CLIENT WORKS
+  // -------------------------------------------------------------
+  console.log("\n\x1b[1m[Suite 7] Commercial Available Quota & Client Works Lifecycle\x1b[0m");
+
+  // 7.1 Set Manual Quota
+  const productoConCupo = await setCupoDisponible("prod-pinos-cemento", "cupo_manual", 35, true);
+  assert(
+    productoConCupo.modo_disponible === "cupo_manual" &&
+    productoConCupo.stock_disponible === 35 &&
+    productoConCupo.cupo_manual_red === 35,
+    "setCupoDisponible correctly sets manual commercial quota to 35 units"
+  );
+
+  // 7.2 Defensive Clamping: Manual Quota cannot exceed physical available (120 - 60 = 60)
+  const productoClamp = await setCupoDisponible("prod-pinos-cemento", "cupo_manual", 999, true);
+  assert(
+    productoClamp.stock_disponible === 60,
+    "setCupoDisponible defensively clamps manual quota to maximum physical free stock (60)"
+  );
+
+  // 7.3 Revert to 100% Automatic
+  const productoAuto = await setCupoDisponible("prod-pinos-cemento", "automatico", undefined, true);
+  assert(
+    productoAuto.modo_disponible === "automatico" &&
+    productoAuto.stock_disponible === 60,
+    "setCupoDisponible successfully restores 100% automatic mode (120 - 60 = 60)"
+  );
+
+  // 7.4 Client Works Storage
+  const obrasIniciales = getStoredObras("usr-sofia-valenzuela");
+  assert(
+    obrasIniciales.length >= 2,
+    "getStoredObras retrieves active registered works for client Sofia Valenzuela"
+  );
+
+  const nuevaObraPrueba = saveStoredObra({
+    id: "obra-test-auto",
+    cliente_id: "usr-sofia-valenzuela",
+    cliente_nombre: "Constructora Arcos S.A.",
+    nombre_obra: "Edificio Test Automatizado",
+    direccion: "Av. Costanera 100",
+    ciudad: "Rosario",
+    responsable_contacto: "Ing. Tester",
+    telefono_contacto: "+54 9 341 555-9999",
+    activa: true,
+    fecha_inicio: "19/11/2026",
+  });
+  const obrasActualizadas = getStoredObras("usr-sofia-valenzuela");
+  assert(
+    obrasActualizadas.some((o) => o.id === "obra-test-auto"),
+    "saveStoredObra successfully registers new construction site into client portfolio"
+  );
+
+  // 7.5 Vertia Operator Order Assignment
+  const ordenAsignada = await asignarCorralonAOrden("ord-pinos-1049", "tenant-materiales-centro", "Materiales del Centro S.A.");
+  assert(
+    ordenAsignada.tenant_id === "tenant-materiales-centro" &&
+    ordenAsignada.corralonAsignado === "Materiales del Centro S.A." &&
+    ordenAsignada.estado === "Asignada",
+    "asignarCorralonAOrden successfully transfers order from Vertia coordination to Materiales del Centro"
+  );
+
+  // -------------------------------------------------------------
+  // SUITE 8: PRESUPUESTO CONFIRMADO & PROFESIONALES RED VERTIA
+  // -------------------------------------------------------------
+  console.log("\n\x1b[1m[Suite 8] Presupuestos Confirmados & Profesionales Escrow\x1b[0m");
+
+  // 8.1 Vertia Operator emits confirmed budget for an order
+  const ordenPresupuestada = await emitirPresupuesto(
+    "ord-pinos-1049",
+    250000,
+    35000,
+    "tenant-los-pinos",
+    "Corralón Los Pinos S.R.L."
+  );
+  assert(
+    ordenPresupuestada.estado === "Presupuesto listo" &&
+    ordenPresupuestada.monto_total_cotizado === 250000 &&
+    ordenPresupuestada.costo_flete === 35000 &&
+    ordenPresupuestada.presupuesto_emitido === true &&
+    ordenPresupuestada.presupuesto_aprobado === false,
+    "emitirPresupuesto sets status to Presupuesto listo with quotation breakdown"
+  );
+
+  // 8.2 Client accepts confirmed budget
+  const ordenAceptada = await aceptarPresupuesto("ord-pinos-1049");
+  assert(
+    ordenAceptada.estado === "Asignada" &&
+    ordenAceptada.presupuesto_aprobado === true,
+    "aceptarPresupuesto transitions order to Asignada with client approval"
+  );
+
+  // 8.3 Registration of Service Professional
+  const nuevoProf = saveStoredProfesional({
+    id: "prof-test-electricista",
+    nombre: "Roberto Varela",
+    rubro: "Electricista",
+    matricula: "MAT-COPITEC-9842",
+    telefono: "+54 9 341 555-8877",
+    ciudad: "Rosario",
+    zona_cobertura: "Rosario y Funes",
+    calificacion: 4.9,
+    trabajos_completados: 14,
+    activo: true,
+    tarifa_hora_estimada: 12000,
+    created_at: new Date().toISOString(),
+  });
+  const profs = getStoredProfesionales();
+  assert(
+    profs.some((p) => p.id === "prof-test-electricista") && nuevoProf.rubro === "Electricista",
+    "saveStoredProfesional & getStoredProfesionales manage registered trade professionals"
+  );
+
+  // 8.4 Create Service Request
+  const nuevaSolicitudServicio = saveStoredSolicitudServicio({
+    id: "srv-test-01",
+    folio: "SRV-TEST-901",
+    cliente_id: "usr-sofia-valenzuela",
+    cliente_nombre: "Constructora Arcos S.A.",
+    obra_id: "obra-test-auto",
+    obra_nombre: "Edificio Test Automatizado",
+    rubro: "Electricista",
+    descripcion_tarea: "Tendido de bandejas portacables en subsuelo",
+    fecha_requerida: "25/11/2026",
+    costo_estimado: 150000,
+    costo_mano_obra: 130000,
+    comision_vertia: 20000,
+    cobrado_cliente: false,
+    pagado_profesional: false,
+    conformidad_cliente: false,
+    estado: "Solicitado",
+    created_at: new Date().toISOString(),
+  });
+  assert(
+    nuevaSolicitudServicio.folio === "SRV-TEST-901" && nuevaSolicitudServicio.estado === "Solicitado",
+    "saveStoredSolicitudServicio creates new trade requirement in Red Vertia"
+  );
+
+  // 8.5 Escrow Lifecycle: Customer Collection -> Work Conformity -> Professional Payout
+  const cobrado = updateStoredSolicitudServicio("srv-test-01", {
+    profesional_id: nuevoProf.id,
+    profesional_nombre: nuevoProf.nombre,
+    cobrado_cliente: true,
+    fecha_cobro: "20/11/2026",
+    estado: "En ejecución",
+  });
+  assert(
+    cobrado?.cobrado_cliente === true && cobrado.estado === "En ejecución",
+    "updateStoredSolicitudServicio records client escrow payment and execution state"
+  );
+
+  const conConformidad = updateStoredSolicitudServicio("srv-test-01", {
+    conformidad_cliente: true,
+    estado: "Finalizado con Conformidad",
+  });
+  assert(
+    conConformidad?.conformidad_cliente === true && conConformidad.estado === "Finalizado con Conformidad",
+    "updateStoredSolicitudServicio records client work conformity"
+  );
+
+  const liquidado = updateStoredSolicitudServicio("srv-test-01", {
+    pagado_profesional: true,
+    fecha_pago: "21/11/2026",
+    estado: "Liquidado y Pagado",
+  });
+  assert(
+    liquidado?.pagado_profesional === true && liquidado.estado === "Liquidado y Pagado",
+    "updateStoredSolicitudServicio releases escrow disbursement to professional"
   );
 
 

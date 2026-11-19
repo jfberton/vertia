@@ -3,10 +3,16 @@ import {
   MOCK_ALMACENES,
   MOCK_UBICACIONES,
   MOCK_ORDENES,
+  MOCK_OBRAS_CLIENTE,
+  MOCK_PROFESIONALES,
+  MOCK_SOLICITUDES_SERVICIOS,
   MultiTenantProducto,
   MultiTenantAlmacen,
   MultiTenantUbicacion,
   MultiTenantOrden,
+  ObraCliente,
+  ProfesionalServicio,
+  SolicitudServicio,
 } from "../data/mock-multi-tenant";
 import {
   EmbarqueItem,
@@ -20,6 +26,9 @@ const STORAGE_KEYS = {
   ORDENES: "inventrack_hybrid_ordenes",
   EVIDENCIAS: "inventrack_hybrid_evidencias",
   EMBARQUES: "inventrack_hybrid_embarques",
+  OBRAS: "inventrack_hybrid_obras",
+  PROFESIONALES: "inventrack_hybrid_profesionales",
+  SERVICIOS: "inventrack_hybrid_servicios",
 } as const;
 
 export interface MultiTenantEvidencia {
@@ -157,6 +166,9 @@ let memoryCacheUbicaciones: MultiTenantUbicacion[] = Array.isArray(MOCK_UBICACIO
 let memoryCacheOrdenes: MultiTenantOrden[] = Array.isArray(MOCK_ORDENES) ? [...MOCK_ORDENES] : [];
 let memoryCacheEvidencias: MultiTenantEvidencia[] = Array.isArray(MOCK_EVIDENCIAS) ? [...MOCK_EVIDENCIAS] : [];
 let memoryCacheEmbarques: EmbarqueItem[] = Array.isArray(MOCK_EMBARQUE_ITEMS) ? [...MOCK_EMBARQUE_ITEMS] : [];
+let memoryCacheObras: ObraCliente[] = Array.isArray(MOCK_OBRAS_CLIENTE) ? [...MOCK_OBRAS_CLIENTE] : [];
+let memoryCacheProfesionales: ProfesionalServicio[] = Array.isArray(MOCK_PROFESIONALES) ? [...MOCK_PROFESIONALES] : [];
+let memoryCacheServicios: SolicitudServicio[] = Array.isArray(MOCK_SOLICITUDES_SERVICIOS) ? [...MOCK_SOLICITUDES_SERVICIOS] : [];
 
 function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof localStorage !== "undefined";
@@ -242,12 +254,29 @@ export function updateStoredProducto(
     ...updates,
   };
 
-  // Mantener invariante si cambian los stocks
-  if (updates.stock_real !== undefined || updates.stock_comprometido !== undefined) {
+  // Mantener invariante si cambian los stocks o el modo de disponible comercial
+  if (
+    updates.stock_real !== undefined ||
+    updates.stock_comprometido !== undefined ||
+    updates.modo_disponible !== undefined ||
+    updates.cupo_manual_red !== undefined
+  ) {
     const stockReal = updates.stock_real !== undefined ? updates.stock_real : current.stock_real;
     const stockComprometido =
       updates.stock_comprometido !== undefined ? updates.stock_comprometido : current.stock_comprometido;
-    updatedItem.stock_disponible = stockReal - stockComprometido;
+    const modo = updates.modo_disponible !== undefined ? updates.modo_disponible : (current.modo_disponible || "automatico");
+    const maxLibre = Math.max(0, stockReal - stockComprometido);
+
+    if (modo === "cupo_manual") {
+      const cupo = updates.cupo_manual_red !== undefined ? updates.cupo_manual_red : (current.cupo_manual_red ?? maxLibre);
+      const cupoAjustado = Math.min(Math.max(0, Number(cupo) || 0), maxLibre);
+      updatedItem.cupo_manual_red = cupoAjustado;
+      updatedItem.stock_disponible = cupoAjustado;
+      updatedItem.modo_disponible = "cupo_manual";
+    } else {
+      updatedItem.modo_disponible = "automatico";
+      updatedItem.stock_disponible = maxLibre;
+    }
   }
 
   const updated = [...all];
@@ -537,6 +566,117 @@ export function updateStoredEmbarque(
   updated[index] = updatedItem;
   memoryCacheEmbarques = updated;
   saveToStorage(STORAGE_KEYS.EMBARQUES, updated);
+  return updatedItem;
+}
+
+// ---------------------------------------------------------------------------
+// OBRAS DE CLIENTES
+// ---------------------------------------------------------------------------
+export function getStoredObras(clienteId?: string): ObraCliente[] {
+  const all = isBrowser()
+    ? loadFromStorage<ObraCliente>(STORAGE_KEYS.OBRAS, memoryCacheObras)
+    : memoryCacheObras;
+
+  if (!clienteId || clienteId === "all") {
+    return [...all];
+  }
+  return all.filter((o) => o.cliente_id === clienteId);
+}
+
+export function saveStoredObra(obra: ObraCliente): ObraCliente {
+  const all = isBrowser()
+    ? loadFromStorage<ObraCliente>(STORAGE_KEYS.OBRAS, memoryCacheObras)
+    : memoryCacheObras;
+  const index = all.findIndex((o) => o.id === obra.id);
+  let updated: ObraCliente[];
+
+  if (index >= 0) {
+    updated = [...all];
+    updated[index] = obra;
+  } else {
+    updated = [obra, ...all];
+  }
+
+  memoryCacheObras = updated;
+  saveToStorage(STORAGE_KEYS.OBRAS, updated);
+  return obra;
+}
+
+// ---------------------------------------------------------------------------
+// PROFESIONALES Y SERVICIOS RED VERTIA
+// ---------------------------------------------------------------------------
+export function getStoredProfesionales(): ProfesionalServicio[] {
+  return isBrowser()
+    ? loadFromStorage<ProfesionalServicio>(STORAGE_KEYS.PROFESIONALES, memoryCacheProfesionales)
+    : memoryCacheProfesionales;
+}
+
+export function saveStoredProfesional(prof: ProfesionalServicio): ProfesionalServicio {
+  const all = getStoredProfesionales();
+  const index = all.findIndex((p) => p.id === prof.id);
+  let updated: ProfesionalServicio[];
+
+  if (index >= 0) {
+    updated = [...all];
+    updated[index] = prof;
+  } else {
+    updated = [prof, ...all];
+  }
+
+  memoryCacheProfesionales = updated;
+  saveToStorage(STORAGE_KEYS.PROFESIONALES, updated);
+  return prof;
+}
+
+export function getStoredSolicitudesServicios(clienteId?: string): SolicitudServicio[] {
+  const all = isBrowser()
+    ? loadFromStorage<SolicitudServicio>(STORAGE_KEYS.SERVICIOS, memoryCacheServicios)
+    : memoryCacheServicios;
+
+  if (!clienteId || clienteId === "all") {
+    return [...all];
+  }
+  return all.filter((s) => s.cliente_id === clienteId);
+}
+
+export function saveStoredSolicitudServicio(srv: SolicitudServicio): SolicitudServicio {
+  const all = isBrowser()
+    ? loadFromStorage<SolicitudServicio>(STORAGE_KEYS.SERVICIOS, memoryCacheServicios)
+    : memoryCacheServicios;
+  const index = all.findIndex((s) => s.id === srv.id);
+  let updated: SolicitudServicio[];
+
+  if (index >= 0) {
+    updated = [...all];
+    updated[index] = srv;
+  } else {
+    updated = [srv, ...all];
+  }
+
+  memoryCacheServicios = updated;
+  saveToStorage(STORAGE_KEYS.SERVICIOS, updated);
+  return srv;
+}
+
+export function updateStoredSolicitudServicio(
+  id: string,
+  updates: Partial<SolicitudServicio>
+): SolicitudServicio | null {
+  const all = isBrowser()
+    ? loadFromStorage<SolicitudServicio>(STORAGE_KEYS.SERVICIOS, memoryCacheServicios)
+    : memoryCacheServicios;
+  const index = all.findIndex((s) => s.id === id);
+  if (index === -1) return null;
+
+  const updatedItem: SolicitudServicio = {
+    ...all[index],
+    ...updates,
+  };
+
+  const updated = [...all];
+  updated[index] = updatedItem;
+  memoryCacheServicios = updated;
+  saveToStorage(STORAGE_KEYS.SERVICIOS, updated);
   return updatedItem;
 }
 

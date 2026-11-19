@@ -16,6 +16,9 @@ import {
   Warehouse,
   ShieldCheck,
   Filter,
+  Lock,
+  Check,
+  X,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +30,7 @@ import {
   MultiTenantProducto,
   MOCK_TENANTS,
 } from "@/lib/data/mock-multi-tenant";
+import { updateStoredProducto } from "@/lib/services/mock-store";
 
 export default function ProductosPage() {
   const { user, tenant, allTenants } = useAuth();
@@ -48,6 +52,68 @@ export default function ProductosPage() {
   const [nuevoComprometido, setNuevoComprometido] = useState("");
 
   const isSuperAdmin = user?.is_super_admin ?? false;
+  const isAdminEmpresa =
+    user?.rol === "administrador" ||
+    Boolean(user?.cargo && user.cargo.toLowerCase().includes("administrador"));
+
+  // Modal para configurar cupo de disponible comercial
+  const [productoParaCupo, setProductoParaCupo] = useState<MultiTenantProducto | null>(null);
+  const [modoCupo, setModoCupo] = useState<"automatico" | "cupo_manual">("automatico");
+  const [valorCupoManual, setValorCupoManual] = useState<number>(0);
+  const [publicarEnRedCupo, setPublicarEnRedCupo] = useState<boolean>(true);
+
+  const abrirModalCupo = (prod: MultiTenantProducto) => {
+    if (isSuperAdmin) return;
+    if (!isAdminEmpresa) {
+      setMensajeExito("⚠️ Acción restringida: Solo el Administrador del corralón puede modificar el cupo disponible comercial.");
+      setTimeout(() => setMensajeExito(null), 3500);
+      return;
+    }
+    setProductoParaCupo(prod);
+    setModoCupo(prod.modo_disponible || "automatico");
+    const maxLibre = Math.max(0, prod.stock_real - prod.stock_comprometido);
+    setValorCupoManual(prod.cupo_manual_red ?? maxLibre);
+    setPublicarEnRedCupo(prod.publicado_en_red);
+  };
+
+  const handleGuardarCupo = () => {
+    if (!productoParaCupo) return;
+    const maxLibre = Math.max(0, productoParaCupo.stock_real - productoParaCupo.stock_comprometido);
+    const cupoFinal =
+      modoCupo === "cupo_manual"
+        ? Math.min(Math.max(0, Number(valorCupoManual) || 0), maxLibre)
+        : maxLibre;
+
+    setProductos((prev) =>
+      prev.map((p) => {
+        if (p.id === productoParaCupo.id) {
+          return {
+            ...p,
+            modo_disponible: modoCupo,
+            cupo_manual_red: modoCupo === "cupo_manual" ? cupoFinal : undefined,
+            stock_disponible: cupoFinal,
+            publicado_en_red: publicarEnRedCupo,
+          };
+        }
+        return p;
+      })
+    );
+
+    updateStoredProducto(productoParaCupo.id, {
+      modo_disponible: modoCupo,
+      cupo_manual_red: modoCupo === "cupo_manual" ? cupoFinal : undefined,
+      stock_disponible: cupoFinal,
+      publicado_en_red: publicarEnRedCupo,
+    });
+
+    setMensajeExito(
+      modoCupo === "cupo_manual"
+        ? `Cupo comercial manual de "${productoParaCupo.nombre}" fijado en ${cupoFinal} ${productoParaCupo.unidad_medida}.`
+        : `"${productoParaCupo.nombre}" configurado al 100% automático (${cupoFinal} ${productoParaCupo.unidad_medida} disponibles).`
+    );
+    setTimeout(() => setMensajeExito(null), 4000);
+    setProductoParaCupo(null);
+  };
 
   // Determine active tenant filter:
   // If super admin -> use superAdminTenantFilter ("all" or specific tenant ID)
@@ -248,7 +314,7 @@ export default function ProductosPage() {
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
           <p className="text-[11px] text-emerald-800/80 mt-1 leading-relaxed">
-            Saldo inmediato para despachar sin afectar compromisos previos. Visible en el marketplace B2B.
+            Saldo inmediato para despachar sin afectar compromisos previos. Visible en la Red Vertia.
           </p>
         </Card>
       </div>
@@ -362,30 +428,59 @@ export default function ProductosPage() {
 
                       {/* Stock Disponible */}
                       <td className="py-3.5 px-4 text-center bg-emerald-50/40">
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="flex flex-col items-center justify-center gap-1">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`font-black text-sm ${
+                                stockCritico ? "text-amber-600" : "text-emerald-700"
+                              }`}
+                            >
+                              {p.stock_disponible} {p.unidad_medida}
+                            </span>
+                            {stockCritico && (
+                              <span title="Stock disponible por debajo del umbral mínimo de seguridad">
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                              </span>
+                            )}
+                          </div>
                           <span
-                            className={`font-black text-sm ${
-                              stockCritico ? "text-amber-600" : "text-emerald-700"
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                              p.modo_disponible === "cupo_manual"
+                                ? "bg-purple-50 text-purple-700 border-purple-200"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
                             }`}
                           >
-                            {p.stock_disponible} {p.unidad_medida}
+                            {p.modo_disponible === "cupo_manual"
+                              ? `Cupo Red: ${p.stock_disponible}`
+                              : "100% Auto"}
                           </span>
-                          {stockCritico && (
-                            <span title="Stock disponible por debajo del umbral mínimo de seguridad">
-                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                            </span>
-                          )}
                         </div>
                       </td>
 
                       {/* Red B2B Toggle */}
                       <td className="py-3.5 px-4 text-center">
                         <button
-                          onClick={() => !isSuperAdmin && togglePublicarRed(p.id)}
+                          onClick={() => {
+                            if (isSuperAdmin) return;
+                            if (!isAdminEmpresa) {
+                              setMensajeExito("⚠️ Acción restringida: Solo el Administrador de la empresa puede modificar la visibilidad en red.");
+                              setTimeout(() => setMensajeExito(null), 3500);
+                              return;
+                            }
+                            togglePublicarRed(p.id);
+                          }}
                           disabled={isSuperAdmin}
-                          title={isSuperAdmin ? "Solo el administrador del corralón puede definir la visibilidad en red" : "Cambiar publicación en Red B2B"}
+                          title={
+                            isSuperAdmin
+                              ? "Solo el administrador del corralón puede definir la visibilidad en red"
+                              : !isAdminEmpresa
+                              ? "Solo el Administrador del corralón puede cambiar la publicación"
+                              : "Cambiar publicación en Red Vertia"
+                          }
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
-                            isSuperAdmin ? "cursor-default opacity-85" : "cursor-pointer"
+                            isSuperAdmin || !isAdminEmpresa
+                              ? "cursor-default opacity-85"
+                              : "cursor-pointer"
                           } ${
                             p.publicado_en_red
                               ? "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
@@ -401,11 +496,22 @@ export default function ProductosPage() {
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-slate-400 hover:text-slate-700"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => abrirModalCupo(p)}
+                              title={
+                                isAdminEmpresa
+                                  ? "Configurar Disponible & Cupo Red Vertia"
+                                  : "Solo el Administrador del corralón puede modificar el cupo comercial"
+                              }
+                              className={`h-7 px-2 text-xs gap-1 font-semibold ${
+                                isAdminEmpresa
+                                  ? "text-indigo-700 border-indigo-200 hover:bg-indigo-50 cursor-pointer"
+                                  : "text-slate-400 border-slate-200 opacity-60 cursor-not-allowed"
+                              }`}
                             >
-                              <Edit2 className="w-3.5 h-3.5" />
+                              <SlidersHorizontal className="w-3.5 h-3.5" />
+                              <span className="hidden md:inline">Cupo Red</span>
                             </Button>
                           </div>
                         </td>
@@ -514,6 +620,178 @@ export default function ProductosPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Configurar Disponible & Cupo Red B2B */}
+      {productoParaCupo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-full max-w-lg space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-700">
+                  <SlidersHorizontal className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">
+                    Configurar Cupo Comercial & Red B2B
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {productoParaCupo.nombre} ({productoParaCupo.codigo_barras})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setProductoParaCupo(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Métricas físicas actuales */}
+            <div className="grid grid-cols-3 gap-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-center">
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">Stock Real Físico</div>
+                <div className="text-base font-extrabold text-slate-900">
+                  {productoParaCupo.stock_real} {productoParaCupo.unidad_medida}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase font-bold text-amber-500">Comprometido</div>
+                <div className="text-base font-extrabold text-amber-600">
+                  {productoParaCupo.stock_comprometido} {productoParaCupo.unidad_medida}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase font-bold text-emerald-600">Máx. Físico Libre</div>
+                <div className="text-base font-extrabold text-emerald-700">
+                  {Math.max(0, productoParaCupo.stock_real - productoParaCupo.stock_comprometido)} {productoParaCupo.unidad_medida}
+                </div>
+              </div>
+            </div>
+
+            {/* Modalidad de Disponible */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-slate-800 block">
+                Modalidad de Disponibilidad Comercial:
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setModoCupo("automatico")}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    modoCupo === "automatico"
+                      ? "bg-indigo-50/80 border-indigo-400 ring-2 ring-indigo-200 text-indigo-900"
+                      : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <div className="text-xs font-bold flex items-center justify-between">
+                    <span>100% Automático</span>
+                    {modoCupo === "automatico" && <Check className="w-4 h-4 text-indigo-600" />}
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                    Todo el disponible libre ({Math.max(0, productoParaCupo.stock_real - productoParaCupo.stock_comprometido)} {productoParaCupo.unidad_medida}) queda abierto a mostrador y red.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModoCupo("cupo_manual")}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                    modoCupo === "cupo_manual"
+                      ? "bg-purple-50/80 border-purple-400 ring-2 ring-purple-200 text-purple-900"
+                      : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <div className="text-xs font-bold flex items-center justify-between">
+                    <span>Cupo Manual Reservado</span>
+                    {modoCupo === "cupo_manual" && <Check className="w-4 h-4 text-purple-600" />}
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                    Fijas un cupo tope específico para la Red Vertia y reservas saldo para venta directa.
+                  </p>
+                </button>
+              </div>
+
+              {modoCupo === "cupo_manual" && (
+                <div className="p-3 bg-purple-50/50 border border-purple-200 rounded-xl space-y-2 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-purple-900">
+                      Cupo disponible para la Red Vertia:
+                    </label>
+                    <span className="text-[11px] text-purple-700 font-semibold">
+                      Máximo permitido: {Math.max(0, productoParaCupo.stock_real - productoParaCupo.stock_comprometido)} {productoParaCupo.unidad_medida}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      max={Math.max(0, productoParaCupo.stock_real - productoParaCupo.stock_comprometido)}
+                      value={valorCupoManual}
+                      onChange={(e) => setValorCupoManual(Number(e.target.value))}
+                      className="h-9 text-sm font-black text-purple-950 bg-white"
+                    />
+                    <span className="text-xs font-bold text-slate-600 px-2">
+                      {productoParaCupo.unidad_medida}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-purple-600">
+                    Ante un nuevo pedido, la cantidad requerida se sumará a Stock Comprometido y se descontará automáticamente de este cupo.
+                  </p>
+                </div>
+              )}
+
+              {/* Toggle Publicado en Red */}
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-slate-800">
+                    Publicar en la Red B2B de Vertia
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Permite que constructoras y corralones cercanos vean este producto.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPublicarEnRedCupo(!publicarEnRedCupo)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                    publicarEnRedCupo ? "bg-indigo-600" : "bg-slate-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      publicarEnRedCupo ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setProductoParaCupo(null)}
+                className="text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleGuardarCupo}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Guardar Configuración Comercial</span>
+              </Button>
+            </div>
           </div>
         </div>
       )}

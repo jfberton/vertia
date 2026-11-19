@@ -38,13 +38,39 @@ import {
   PowerOff,
   Power,
   RotateCcw,
+  ClipboardList,
+  Wrench,
+  Star,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  MOCK_TENANTS,
+  MOCK_PRODUCTOS,
+  MOCK_ALMACENES,
+  MultiTenantOrden,
+} from "@/lib/data/mock-multi-tenant";
+import {
+  getAllStoredProductos,
+  getAllStoredAlmacenes,
+  getAllStoredOrdenes,
+  updateStoredOrden,
+  getStoredProfesionales,
+  getStoredSolicitudesServicios,
+  updateStoredSolicitudServicio,
+} from "@/lib/services/mock-store";
+import { emitirPresupuesto } from "@/lib/services/ordenes.service";
+import { RubroProfesional, ProfesionalServicio, SolicitudServicio } from "@/types/domain";
 
-type TabSeccion = "empresas" | "economia" | "salud_tickets" | "usuarios_admin";
+type TabSeccion =
+  | "empresas"
+  | "consulta_corralones"
+  | "profesionales_servicios"
+  | "economia"
+  | "salud_tickets"
+  | "usuarios_admin";
 
 export interface EmpresaLicencia {
   id: string;
@@ -241,6 +267,128 @@ export default function MetaAdminPage() {
   const [nuevoPlan, setNuevoPlan] = useState<"Mono-Almacén" | "Multi-Almacén" | "Enterprise" | "Plan Obras">("Mono-Almacén");
   const [mensajeNotificacion, setMensajeNotificacion] = useState<string | null>(null);
 
+  // Consulta de Corralones & Asignación de Pedidos
+  const [corralonSeleccionadoId, setCorralonSeleccionadoId] = useState<string>("tenant-los-pinos");
+  const [ordenesPendientesAsignacion, setOrdenesPendientesAsignacion] = useState(() => {
+    return getAllStoredOrdenes().filter(
+      (o) =>
+        o.estado === "Por cotizar" ||
+        o.estado === "Presupuesto listo" ||
+        o.corralonAsignado.toLowerCase().includes("pendiente")
+    );
+  });
+
+  // Modal / Proceso de Cotización Confirmada
+  const [ordenParaCotizar, setOrdenParaCotizar] = useState<MultiTenantOrden | null>(null);
+  const [cotizacionMonto, setCotizacionMonto] = useState<number>(185000);
+  const [cotizacionFlete, setCotizacionFlete] = useState<number>(32000);
+  const [cotizacionCorralonId, setCotizacionCorralonId] = useState<string>("tenant-los-pinos");
+
+  const handleEmitirPresupuesto = (ordenId: string) => {
+    const corralonInfo = MOCK_TENANTS.find((t) => t.id === cotizacionCorralonId);
+    const nombre = corralonInfo?.nombre || "Corralón Asignado";
+    emitirPresupuesto(
+      ordenId,
+      Number(cotizacionMonto) || 0,
+      Number(cotizacionFlete) || 0,
+      cotizacionCorralonId,
+      nombre
+    );
+    setOrdenesPendientesAsignacion((prev) =>
+      prev.map((o) =>
+        o.id === ordenId
+          ? {
+              ...o,
+              estado: "Presupuesto listo",
+              corralonAsignado: nombre,
+              tenant_id: cotizacionCorralonId,
+              monto_total_cotizado: cotizacionMonto,
+              costo_flete: cotizacionFlete,
+            }
+          : o
+      )
+    );
+    setOrdenParaCotizar(null);
+    setMensajeNotificacion(
+      `Presupuesto confirmado emitido ($${cotizacionMonto.toLocaleString("es-AR")} incl. flete $${cotizacionFlete.toLocaleString("es-AR")}) asignado a "${nombre}". Notificado a la constructora para su aprobación en la app.`
+    );
+    setTimeout(() => setMensajeNotificacion(null), 5000);
+  };
+
+  const handleAsignarOrdenACorralon = (ordenId: string, corralonId: string) => {
+    const corralonInfo = MOCK_TENANTS.find((t) => t.id === corralonId);
+    const nombre = corralonInfo?.nombre || "Corralón Asignado";
+    updateStoredOrden(ordenId, {
+      tenant_id: corralonId,
+      corralonAsignado: nombre,
+      estado: "Asignada",
+    });
+    setOrdenesPendientesAsignacion((prev) => prev.filter((o) => o.id !== ordenId));
+    setMensajeNotificacion(`Orden asignada exitosamente a "${nombre}". Ahora figura en su panel de InvenTrack para picking.`);
+    setTimeout(() => setMensajeNotificacion(null), 4500);
+  };
+
+  // Profesionales & Servicios Red Vertia
+  const [solicitudesServiciosMeta, setSolicitudesServiciosMeta] = useState<SolicitudServicio[]>(() =>
+    getStoredSolicitudesServicios("all")
+  );
+  const [profesionalesMeta, setProfesionalesMeta] = useState<ProfesionalServicio[]>(() =>
+    getStoredProfesionales()
+  );
+
+  const handleRegistrarCobroCliente = (srvId: string) => {
+    const updated = updateStoredSolicitudServicio(srvId, {
+      cobrado_cliente: true,
+      fecha_cobro: new Date().toLocaleDateString("es-AR"),
+      estado: "En ejecución",
+    });
+    if (updated) {
+      setSolicitudesServiciosMeta((prev) =>
+        prev.map((s) => (s.id === srvId ? updated : s))
+      );
+      setMensajeNotificacion(
+        `Cobro al cliente registrado para la solicitud ${updated.folio}. Fondos en custodia en Vertia.`
+      );
+      setTimeout(() => setMensajeNotificacion(null), 4500);
+    }
+  };
+
+  const handleLiberarPagoProfesional = (srvId: string) => {
+    const updated = updateStoredSolicitudServicio(srvId, {
+      pagado_profesional: true,
+      fecha_pago: new Date().toLocaleDateString("es-AR"),
+      estado: "Liquidado y Pagado",
+    });
+    if (updated) {
+      setSolicitudesServiciosMeta((prev) =>
+        prev.map((s) => (s.id === srvId ? updated : s))
+      );
+      setMensajeNotificacion(
+        `Pago de $${updated.costo_mano_obra.toLocaleString("es-AR")} liberado al profesional para solicitud ${updated.folio}. Comisión Vertia: $${updated.comision_vertia.toLocaleString("es-AR")}.`
+      );
+      setTimeout(() => setMensajeNotificacion(null), 4500);
+    }
+  };
+
+  const handleAsignarProfesionalASolicitud = (srvId: string, profId: string) => {
+    const prof = profesionalesMeta.find((p) => p.id === profId);
+    if (!prof) return;
+    const updated = updateStoredSolicitudServicio(srvId, {
+      profesional_id: prof.id,
+      profesional_nombre: prof.nombre,
+      estado: "Asignado",
+    });
+    if (updated) {
+      setSolicitudesServiciosMeta((prev) =>
+        prev.map((s) => (s.id === srvId ? updated : s))
+      );
+      setMensajeNotificacion(
+        `Profesional "${prof.nombre}" asignado a la solicitud ${updated.folio}.`
+      );
+      setTimeout(() => setMensajeNotificacion(null), 4000);
+    }
+  };
+
   // Filtrado de empresas
   const empresasFiltradas = empresas.filter(
     (e) =>
@@ -416,14 +564,38 @@ export default function MetaAdminPage() {
       <div className="flex border-b border-slate-200 space-x-2 text-xs font-semibold">
         <button
           onClick={() => setSeccionActiva("empresas")}
-          className={`pb-3 px-3 border-b-2 flex items-center gap-1.5 transition-colors ${
+          className={`pb-3 px-3 border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
             seccionActiva === "empresas"
-              ? "border-indigo-600 text-indigo-700"
+              ? "border-indigo-600 text-indigo-700 font-bold"
               : "border-transparent text-slate-500 hover:text-slate-800"
           }`}
         >
           <Building2 className="w-4 h-4" />
           Clientes & Proveedores de la Red ({empresas.length})
+        </button>
+
+        <button
+          onClick={() => setSeccionActiva("consulta_corralones")}
+          className={`pb-3 px-3 border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
+            seccionActiva === "consulta_corralones"
+              ? "border-indigo-600 text-indigo-700 font-bold"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Warehouse className="w-4 h-4" />
+          Consulta de Corralones & Stock (InvenTrack)
+        </button>
+
+        <button
+          onClick={() => setSeccionActiva("profesionales_servicios")}
+          className={`pb-3 px-3 border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
+            seccionActiva === "profesionales_servicios"
+              ? "border-indigo-600 text-indigo-700 font-bold"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Wrench className="w-4 h-4" />
+          Profesionales & Oficios Red ({solicitudesServiciosMeta.length})
         </button>
 
         <button
@@ -731,6 +903,583 @@ export default function MetaAdminPage() {
               </table>
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* =========================================================================
+          SECCIÓN 1.5: CONSULTA DE CORRALONES & INVENTARIOS (INVENTRACK)
+         ========================================================================= */}
+      {seccionActiva === "consulta_corralones" && (() => {
+        const corralonActual =
+          MOCK_TENANTS.find((t) => t.id === corralonSeleccionadoId) || MOCK_TENANTS[0];
+        const productosCorralon = getAllStoredProductos().filter(
+          (p) => p.tenant_id === corralonActual.id
+        );
+        const almacenesCorralon = getAllStoredAlmacenes().filter(
+          (a) => a.tenant_id === corralonActual.id
+        );
+
+        const stockRealTotal = productosCorralon.reduce((a, b) => a + b.stock_real, 0);
+        const stockComprometidoTotal = productosCorralon.reduce(
+          (a, b) => a + b.stock_comprometido,
+          0
+        );
+        const stockDisponibleTotal = productosCorralon.reduce(
+          (a, b) => a + b.stock_disponible,
+          0
+        );
+
+        return (
+          <div className="space-y-5 animate-in fade-in">
+            {/* Selector de Corralón Conectado */}
+            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Corralón Proveedor Conectado a Vertia
+                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <select
+                    value={corralonSeleccionadoId}
+                    onChange={(e) => setCorralonSeleccionadoId(e.target.value)}
+                    className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    {MOCK_TENANTS.filter((t) => t.tipo_empresa === "corralon").map((t) => (
+                      <option key={t.id} value={t.id}>
+                        🏭 {t.nombre} ({t.ciudad})
+                      </option>
+                    ))}
+                  </select>
+                  <Badge
+                    variant="outline"
+                    className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs font-semibold"
+                  >
+                    Módulo InvenTrack Activo
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Indicador de Modo Auditoría */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-semibold shadow-2xs">
+                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>
+                  Modo Auditoría Vertia: Solo lectura de inventarios (sin permisos de edición sobre el corralón)
+                </span>
+              </div>
+            </div>
+
+            {/* Tarjetas de Métricas de Stock de este Corralón */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+              <Card className="p-4 bg-white border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Stock Físico Real
+                </span>
+                <div className="text-2xl font-black text-slate-900 mt-1">
+                  {stockRealTotal.toLocaleString("es-AR")}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">En racks y galpones</div>
+              </Card>
+
+              <Card className="p-4 bg-white border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                  Comprometido
+                </span>
+                <div className="text-2xl font-black text-amber-600 mt-1">
+                  {stockComprometidoTotal.toLocaleString("es-AR")}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">Reservado en órdenes</div>
+              </Card>
+
+              <Card className="p-4 bg-white border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                  Disponible para Red
+                </span>
+                <div className="text-2xl font-black text-emerald-700 mt-1">
+                  {stockDisponibleTotal.toLocaleString("es-AR")}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">Capacidad de venta</div>
+              </Card>
+
+              <Card className="p-4 bg-white border border-slate-200 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Almacenes Activos
+                </span>
+                <div className="text-2xl font-black text-slate-900 mt-1">
+                  {almacenesCorralon.length}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">Depósitos / Muelles</div>
+              </Card>
+            </div>
+
+            {/* Mesa de Asignación de Solicitudes de Clientes */}
+            <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs space-y-3 p-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-indigo-600" />
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Mesa de Asignación de Solicitudes de Clientes
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Pedidos generados por empresas constructoras pendientes de asignación por el Operador Vertia.
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-xs font-semibold bg-amber-50 text-amber-800 border-amber-200">
+                  {ordenesPendientesAsignacion.length} pendiente(s)
+                </Badge>
+              </div>
+
+              {ordenesPendientesAsignacion.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400">
+                  No hay solicitudes de clientes pendientes de asignación en este momento.
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {ordenesPendientesAsignacion.map((ord) => (
+                    <div
+                      key={ord.id}
+                      className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-xs text-indigo-700">{ord.folio}</span>
+                          <span className="text-xs font-bold text-slate-800">• {ord.cliente}</span>
+                          <Badge variant="outline" className="text-[10px] bg-white text-slate-600">
+                            {ord.tipo}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-slate-600 mt-1">
+                          Destino: <strong>{ord.proyectoUbicacion}</strong> ({ord.distanciaKm} km)
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          Materiales: {ord.detalles.map((d) => `${d.cantidadSolicitada} ${d.unidad} ${d.material}`).join(", ")}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {ord.estado === "Presupuesto listo" ? (
+                          <div className="text-right bg-white p-2 rounded-lg border border-purple-200">
+                            <Badge className="bg-purple-50 text-purple-800 border-purple-300 text-xs font-bold">
+                              Presupuesto Emitido: ${(ord.monto_total_cotizado || 0).toLocaleString("es-AR")}
+                            </Badge>
+                            <div className="text-[10px] text-slate-500 mt-0.5">
+                              Asignado a: <strong>{ord.corralonAsignado}</strong> • Aguardando aprobación cliente
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setOrdenParaCotizar(ord);
+                                setCotizacionCorralonId(corralonActual.id);
+                                const estMat = ord.detalles.reduce((acc, d) => acc + d.cantidadSolicitada * 2200, 0);
+                                setCotizacionMonto(estMat + 35000);
+                                setCotizacionFlete(35000);
+                              }}
+                              className="text-xs h-8 border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-semibold gap-1"
+                            >
+                              <DollarSign className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Emitir Presupuesto</span>
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              onClick={() => handleAsignarOrdenACorralon(ord.id, corralonActual.id)}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shrink-0 gap-1.5 shadow-xs h-8"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Asignar Directo a {corralonActual.nombre}</span>
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Catálogo de Productos del Corralón (Solo Lectura) */}
+            <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
+              <div className="px-5 py-3.5 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900">
+                    Catálogo de Productos & Métrica Dual de Stock (Consulta InvenTrack)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Monitoreo en vivo de inventarios de {corralonActual.nombre}.
+                  </p>
+                </div>
+                <span className="text-xs font-semibold text-slate-500">
+                  {productosCorralon.length} materiales registrados
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50/50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                      <th className="py-3 px-4">Material / SKU</th>
+                      <th className="py-3 px-4">Rubro</th>
+                      <th className="py-3 px-4">Precio Lista</th>
+                      <th className="py-3 px-4 text-center">Stock Físico Real</th>
+                      <th className="py-3 px-4 text-center">Comprometido</th>
+                      <th className="py-3 px-4 text-center">Disponible para Red</th>
+                      <th className="py-3 px-4 text-center">Modalidad Cupo</th>
+                      <th className="py-3 px-4 text-center">Red B2B</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {productosCorralon.map((prod) => (
+                      <tr key={prod.id} className="hover:bg-slate-50/60">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-900">{prod.nombre}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">{prod.codigo_barras}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-600">
+                            {prod.categoria}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-800">
+                          ${prod.precio.toLocaleString("es-AR")}
+                        </td>
+                        <td className="py-3 px-4 text-center font-bold text-slate-800 bg-slate-50/40">
+                          {prod.stock_real} {prod.unidad_medida}
+                        </td>
+                        <td className="py-3 px-4 text-center font-bold text-amber-600">
+                          {prod.stock_comprometido} {prod.unidad_medida}
+                        </td>
+                        <td className="py-3 px-4 text-center font-black text-emerald-700 bg-emerald-50/30">
+                          {prod.stock_disponible} {prod.unidad_medida}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                              prod.modo_disponible === "cupo_manual"
+                                ? "bg-purple-50 text-purple-700 border-purple-200"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            }`}
+                          >
+                            {prod.modo_disponible === "cupo_manual"
+                              ? `Cupo: ${prod.stock_disponible}`
+                              : "100% Auto"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                              prod.publicado_en_red
+                                ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                : "bg-slate-100 text-slate-600 border-slate-200"
+                            }`}
+                          >
+                            {prod.publicado_en_red ? "Publicado" : "Solo Local"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* =========================================================================
+          SECCIÓN: PROFESIONALES & SERVICIOS RED VERTIA (MEDIACIÓN & ESCROW)
+         ========================================================================= */}
+      {seccionActiva === "profesionales_servicios" && (
+        <div className="space-y-6 animate-in fade-in">
+          {/* Header de Mediación */}
+          <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-purple-700" />
+                <h3 className="text-sm font-bold text-slate-900">
+                  Mesa de Control de Servicios & Profesionales Red Vertia
+                </h3>
+              </div>
+              <p className="text-xs text-slate-600 max-w-2xl">
+                Supervisión de solicitudes de oficios (gasistas, plomeros, electricistas, albañiles). Gestión del cobro a la constructora (custodia) y liberación de liquidaciones al profesional una vez obtenida la conformidad de obra.
+              </p>
+            </div>
+            <Badge className="bg-purple-100 text-purple-800 border-purple-200 text-xs font-bold py-1 px-3">
+              Mesa de Mediación & Pagos
+            </Badge>
+          </div>
+
+          {/* Tarjetas de Métricas de Servicios */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <Card className="p-4 bg-white border border-slate-200 shadow-2xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Solicitudes Totales
+              </span>
+              <div className="text-2xl font-black text-slate-900 mt-1">
+                {solicitudesServiciosMeta.length}
+              </div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Pedidos de oficios</div>
+            </Card>
+
+            <Card className="p-4 bg-white border border-slate-200 shadow-2xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                En Custodia (Cobrado)
+              </span>
+              <div className="text-2xl font-black text-amber-600 mt-1">
+                $
+                {solicitudesServiciosMeta
+                  .filter((s) => s.cobrado_cliente && !s.pagado_profesional)
+                  .reduce((acc, curr) => acc + curr.costo_estimado, 0)
+                  .toLocaleString("es-AR")}
+              </div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Fondos retenidos en Vertia</div>
+            </Card>
+
+            <Card className="p-4 bg-white border border-slate-200 shadow-2xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                Comisiones Vertia
+              </span>
+              <div className="text-2xl font-black text-emerald-700 mt-1">
+                $
+                {solicitudesServiciosMeta
+                  .reduce((acc, curr) => acc + curr.comision_vertia, 0)
+                  .toLocaleString("es-AR")}
+              </div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Fee de red (12-15%)</div>
+            </Card>
+
+            <Card className="p-4 bg-white border border-slate-200 shadow-2xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600">
+                Profesionales Activos
+              </span>
+              <div className="text-2xl font-black text-purple-700 mt-1">
+                {profesionalesMeta.length}
+              </div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Gasistas, plomeros, etc.</div>
+            </Card>
+          </div>
+
+          {/* Tabla de Gestión de Solicitudes y Cobros/Pagos */}
+          <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
+            <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900">
+                  Bandeja de Requerimientos de Servicios y Liquidaciones Escrow
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Control de asignación, cobro a cliente y desembolso al profesional tras la conformidad.
+                </p>
+              </div>
+              <span className="text-xs font-semibold text-slate-500">
+                {solicitudesServiciosMeta.length} servicios registrados
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                    <th className="py-3 px-4">Folio / Fecha</th>
+                    <th className="py-3 px-4">Cliente / Obra</th>
+                    <th className="py-3 px-4">Rubro / Tarea</th>
+                    <th className="py-3 px-4">Profesional Designado</th>
+                    <th className="py-3 px-4">Desglose Montos</th>
+                    <th className="py-3 px-4">Cobro Cliente</th>
+                    <th className="py-3 px-4">Conformidad</th>
+                    <th className="py-3 px-4 text-right">Pago Profesional</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {solicitudesServiciosMeta.map((srv) => (
+                    <tr key={srv.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-extrabold text-slate-900">{srv.folio}</div>
+                        <div className="text-[10px] text-slate-400">{srv.fecha_requerida}</div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-slate-800">{srv.cliente_nombre}</div>
+                        <div className="text-[10px] text-slate-500">{srv.obra_nombre}</div>
+                      </td>
+
+                      <td className="py-3 px-4 max-w-xs">
+                        <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700 border-purple-200 font-bold mb-0.5">
+                          {srv.rubro}
+                        </Badge>
+                        <div className="text-[11px] text-slate-600 truncate" title={srv.descripcion_tarea}>
+                          {srv.descripcion_tarea}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        {srv.profesional_nombre ? (
+                          <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                            <UserCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>{srv.profesional_nombre}</span>
+                          </div>
+                        ) : (
+                          <select
+                            onChange={(e) => handleAsignarProfesionalASolicitud(srv.id, e.target.value)}
+                            defaultValue=""
+                            className="text-xs bg-slate-50 border border-slate-300 rounded px-2 py-1 font-semibold text-slate-700"
+                          >
+                            <option value="" disabled>
+                              Asignar Profesional...
+                            </option>
+                            {profesionalesMeta
+                              .filter((p) => p.rubro === srv.rubro || true)
+                              .map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.nombre} ({p.rubro})
+                                </option>
+                              ))}
+                          </select>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-slate-900">
+                          Total: ${srv.costo_estimado.toLocaleString("es-AR")}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          Mano Obra: ${srv.costo_mano_obra.toLocaleString("es-AR")} • Vertia: ${srv.comision_vertia.toLocaleString("es-AR")}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        {srv.cobrado_cliente ? (
+                          <div className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Cobrado</span>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => handleRegistrarCobroCliente(srv.id)}
+                            className="text-[10px] h-6 px-2 bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                          >
+                            Registrar Cobro
+                          </Button>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        {srv.conformidad_cliente ? (
+                          <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[10px] font-bold">
+                            ✓ Conforme
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] text-slate-500 bg-slate-50">
+                            En espera
+                          </Badge>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4 text-right">
+                        {srv.pagado_profesional ? (
+                          <div className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Liquidado</span>
+                          </div>
+                        ) : srv.conformidad_cliente && srv.cobrado_cliente ? (
+                          <Button
+                            size="sm"
+                            onClick={() => handleLiberarPagoProfesional(srv.id)}
+                            className="text-xs h-7 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                          >
+                            <DollarSign className="w-3 h-3" />
+                            <span>Liberar Pago</span>
+                          </Button>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 italic">
+                            Requiere cobro y conformidad
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Directorio de Profesionales Registrados */}
+          <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
+            <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900">
+                  Directorio de Profesionales & Oficios Habilitados
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Gasistas matriculados, plomeros, electricistas y constructores asociados a la red.
+                </p>
+              </div>
+              <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold">
+                {profesionalesMeta.length} activos
+              </Badge>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                    <th className="py-3 px-4">Nombre / Razón Social</th>
+                    <th className="py-3 px-4">Rubro / Especialidad</th>
+                    <th className="py-3 px-4">Matrícula / CUIT</th>
+                    <th className="py-3 px-4">Contacto / Teléfono</th>
+                    <th className="py-3 px-4">Zona Cobertura</th>
+                    <th className="py-3 px-4">Tarifa Estimada</th>
+                    <th className="py-3 px-4 text-center">Calificación</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {profesionalesMeta.map((prof) => (
+                    <tr key={prof.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3 px-4 font-bold text-slate-900">
+                        {prof.nombre}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <Badge variant="outline" className="text-[10px] bg-purple-50 text-purple-700 border-purple-200 font-semibold">
+                          {prof.rubro}
+                        </Badge>
+                      </td>
+
+                      <td className="py-3 px-4 text-slate-600">
+                        {prof.matricula ? (
+                          <span className="font-semibold text-slate-800">{prof.matricula}</span>
+                        ) : (
+                          <span className="text-slate-400">CUIT: {prof.cuit_rut || "—"}</span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4 text-slate-600 font-medium">
+                        {prof.telefono}
+                      </td>
+
+                      <td className="py-3 px-4 text-slate-600">
+                        {prof.zona_cobertura}
+                      </td>
+
+                      <td className="py-3 px-4 font-extrabold text-slate-900">
+                        ${prof.tarifa_hora_estimada?.toLocaleString("es-AR") || "8.500"}/h
+                      </td>
+
+                      <td className="py-3 px-4 text-center">
+                        <div className="inline-flex items-center gap-1 font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[11px]">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          <span>{prof.calificacion.toFixed(1)}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1181,6 +1930,126 @@ export default function MetaAdminPage() {
                 className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
               >
                 Confirmar y Aplicar Bonificación
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal / Panel para Emitir Presupuesto Confirmado */}
+      {ordenParaCotizar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <Card className="w-full max-w-lg bg-white border border-slate-200 shadow-2xl rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700">
+                  <DollarSign className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Emitir Presupuesto Confirmado
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Orden {ordenParaCotizar.folio} • {ordenParaCotizar.cliente}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setOrdenParaCotizar(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+              <div className="text-slate-500 font-medium">Destino de obra:</div>
+              <div className="font-bold text-slate-800">{ordenParaCotizar.proyectoUbicacion}</div>
+              <div className="text-[11px] text-slate-500 pt-1">
+                Materiales: {ordenParaCotizar.detalles.map((d) => `${d.cantidadSolicitada} ${d.unidad} ${d.material}`).join(", ")}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Corralón Proveedor Asignado *
+                </label>
+                <select
+                  value={cotizacionCorralonId}
+                  onChange={(e) => setCotizacionCorralonId(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {MOCK_TENANTS.filter((t) => t.tipo_empresa === "corralon").map((t) => (
+                    <option key={t.id} value={t.id}>
+                      🏭 {t.nombre} ({t.ciudad})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Costo Materiales ($ ARS)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={Math.max(0, cotizacionMonto - cotizacionFlete)}
+                    onChange={(e) =>
+                      setCotizacionMonto(Number(e.target.value) + cotizacionFlete)
+                    }
+                    className="text-xs h-9 bg-slate-50 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Costo Flete Consolidado ($ ARS)
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={cotizacionFlete}
+                    onChange={(e) => {
+                      const nuevoFlete = Number(e.target.value);
+                      const baseMat = Math.max(0, cotizacionMonto - cotizacionFlete);
+                      setCotizacionFlete(nuevoFlete);
+                      setCotizacionMonto(baseMat + nuevoFlete);
+                    }}
+                    className="text-xs h-9 bg-slate-50 font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Total Final */}
+              <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between text-xs">
+                <span className="font-bold text-indigo-950">Total Final Presupuestado:</span>
+                <span className="text-base font-extrabold text-indigo-700">
+                  ${cotizacionMonto.toLocaleString("es-AR")}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOrdenParaCotizar(null)}
+                className="text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => handleEmitirPresupuesto(ordenParaCotizar.id)}
+                className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center gap-1.5 shadow-xs"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Emitir Presupuesto a Constructora</span>
               </Button>
             </div>
           </Card>

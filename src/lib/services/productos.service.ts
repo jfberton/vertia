@@ -198,6 +198,42 @@ export class ProductosService {
 
     return updated;
   }
+  /**
+   * Configura el modo de stock disponible (100% automático vs Cupo manual) y visibilidad en red.
+   */
+  async setCupoDisponible(
+    productoId: string,
+    modo: "automatico" | "cupo_manual",
+    cupoManual?: number,
+    publicadoEnRed?: boolean
+  ): Promise<MultiTenantProducto> {
+    const updates: Partial<MultiTenantProducto> = {
+      modo_disponible: modo,
+      cupo_manual_red: cupoManual,
+    };
+    if (publicadoEnRed !== undefined) {
+      updates.publicado_en_red = publicadoEnRed;
+    }
+
+    try {
+      const supabase = createClient();
+      const updatePromise = supabase
+        .from("productos")
+        .update(updates)
+        .eq("id", productoId);
+
+      await withSupabaseTimeout(updatePromise);
+    } catch {
+      // Supabase no listo
+    }
+
+    const updated = updateStoredProducto(productoId, updates);
+    if (!updated) {
+      throw new Error(`Producto con ID ${productoId} no encontrado`);
+    }
+
+    return updated;
+  }
 }
 
 export const productosService = new ProductosService();
@@ -217,3 +253,10 @@ export const updateStock = (
 
 export const togglePublicacionRed = (productoId: string, publicada: boolean) =>
   productosService.togglePublicacionRed(productoId, publicada);
+
+export const setCupoDisponible = (
+  productoId: string,
+  modo: "automatico" | "cupo_manual",
+  cupoManual?: number,
+  publicadoEnRed?: boolean
+) => productosService.setCupoDisponible(productoId, modo, cupoManual, publicadoEnRed);

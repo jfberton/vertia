@@ -33,6 +33,9 @@ function normalizarEstadoOrden(estado: string): MultiTenantOrden["estado"] {
   if (norm === "entregada" || norm === "completada") {
     return "Entregada";
   }
+  if (norm === "presupuesto listo" || norm === "presupuesto emitido" || norm === "cotizado") {
+    return "Presupuesto listo";
+  }
   if (norm === "por cotizar") {
     return "Por cotizar";
   }
@@ -201,6 +204,64 @@ export class OrdenesService {
     }
     return updated;
   }
+  /**
+   * Asigna un corralón proveedor a una orden que estaba pendiente de asignación por Vertia
+   */
+  async asignarCorralonAOrden(
+    ordenId: string,
+    tenantIdCorralon: string,
+    nombreCorralon: string
+  ): Promise<MultiTenantOrden> {
+    const updated = updateStoredOrden(ordenId, {
+      tenant_id: tenantIdCorralon,
+      corralonAsignado: nombreCorralon,
+      estado: "Asignada",
+    });
+    if (!updated) {
+      throw new Error(`Orden con ID ${ordenId} no encontrada`);
+    }
+    return updated;
+  }
+
+  /**
+   * Vertia analiza con los corralones y emite el presupuesto oficial para la constructora
+   */
+  async emitirPresupuesto(
+    ordenId: string,
+    montoCotizado: number,
+    costoFlete: number,
+    corralonId: string,
+    corralonNombre: string
+  ): Promise<MultiTenantOrden> {
+    const updated = updateStoredOrden(ordenId, {
+      tenant_id: corralonId,
+      corralonAsignado: corralonNombre,
+      monto_total_cotizado: montoCotizado,
+      costo_flete: costoFlete,
+      presupuesto_emitido: true,
+      presupuesto_aprobado: false,
+      fecha_presupuesto: new Date().toLocaleDateString("es-AR"),
+      estado: "Presupuesto listo",
+    });
+    if (!updated) {
+      throw new Error(`Orden con ID ${ordenId} no encontrada`);
+    }
+    return updated;
+  }
+
+  /**
+   * La constructora acepta el presupuesto confirmado emitido por Vertia
+   */
+  async aceptarPresupuesto(ordenId: string): Promise<MultiTenantOrden> {
+    const updated = updateStoredOrden(ordenId, {
+      presupuesto_aprobado: true,
+      estado: "Asignada",
+    });
+    if (!updated) {
+      throw new Error(`Orden con ID ${ordenId} no encontrada`);
+    }
+    return updated;
+  }
 }
 
 export const ordenesService = new OrdenesService();
@@ -219,4 +280,21 @@ export const actualizarOrden = (
   ordenId: string,
   updates: Partial<MultiTenantOrden>
 ) => ordenesService.actualizarOrden(ordenId, updates);
+
+export const asignarCorralonAOrden = (
+  ordenId: string,
+  tenantIdCorralon: string,
+  nombreCorralon: string
+) => ordenesService.asignarCorralonAOrden(ordenId, tenantIdCorralon, nombreCorralon);
+
+export const emitirPresupuesto = (
+  ordenId: string,
+  montoCotizado: number,
+  costoFlete: number,
+  corralonId: string,
+  corralonNombre: string
+) => ordenesService.emitirPresupuesto(ordenId, montoCotizado, costoFlete, corralonId, corralonNombre);
+
+export const aceptarPresupuesto = (ordenId: string) =>
+  ordenesService.aceptarPresupuesto(ordenId);
 

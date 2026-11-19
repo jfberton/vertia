@@ -71,6 +71,8 @@ export interface MultiTenantProducto {
   stock_real: number;          // Físico en galpón
   stock_comprometido: number;  // Reservado en órdenes
   stock_disponible: number;    // Libre para la red o mostrador (stock_real - stock_comprometido)
+  modo_disponible?: "automatico" | "cupo_manual";
+  cupo_manual_red?: number;
   cantidad_minima: number;
   cantidad_maxima: number;
   publicado_en_red: boolean;
@@ -105,9 +107,11 @@ export interface MultiTenantOrden {
   tipo: "Material" | "Mantenimiento";
   proyectoUbicacion: string;
   cliente: string;
+  cliente_id?: string;
+  obra_id?: string;
   corralonAsignado: string;
   fecha: string;
-  estado: "Por cotizar" | "Asignada" | "En preparación" | "En camino" | "Entregada";
+  estado: "Por cotizar" | "Presupuesto listo" | "Asignada" | "En preparación" | "En camino" | "Entregada";
   distanciaKm: number;
   detalles: MultiTenantDetalleOrden[];
   remito_numero?: string;
@@ -116,7 +120,259 @@ export interface MultiTenantOrden {
   vehiculo_asignado?: string;
   patente_asignada?: string;
   zona_embarque?: string;
+  monto_total_cotizado?: number;
+  costo_flete?: number;
+  presupuesto_emitido?: boolean;
+  presupuesto_aprobado?: boolean;
+  fecha_presupuesto?: string;
 }
+
+export interface ObraCliente {
+  id: string;
+  cliente_id: string;
+  cliente_nombre: string;
+  nombre_obra: string;
+  direccion: string;
+  ciudad: string;
+  responsable_contacto: string;
+  telefono_contacto: string;
+  coordenadas_gps?: string;
+  activa: boolean;
+  fecha_inicio: string;
+}
+
+export const MOCK_OBRAS_CLIENTE: ObraCliente[] = [
+  {
+    id: "obra-torre-sur",
+    cliente_id: "usr-sofia-valenzuela",
+    cliente_nombre: "Constructora Arcos S.A.",
+    nombre_obra: "Torre Bellini Sur (Obra Torre Sur)",
+    direccion: "Av. Pellegrini 2800",
+    ciudad: "Rosario",
+    responsable_contacto: "Arq. Sofia Valenzuela / Capataz Romero",
+    telefono_contacto: "+54 9 341 555-1234",
+    coordenadas_gps: "-32.9550, -60.6580",
+    activa: true,
+    fecha_inicio: "10/01/2026",
+  },
+  {
+    id: "obra-complejo-las-heras",
+    cliente_id: "usr-sofia-valenzuela",
+    cliente_nombre: "Constructora Arcos S.A.",
+    nombre_obra: "Complejo Residencial Las Heras",
+    direccion: "Av. Belgrano 1420",
+    ciudad: "Rosario Centro",
+    responsable_contacto: "Ing. Gonzalo Peña",
+    telefono_contacto: "+54 9 341 555-8899",
+    coordenadas_gps: "-32.9620, -60.6420",
+    activa: true,
+    fecha_inicio: "01/02/2026",
+  },
+  {
+    id: "obra-nave-industrial-alberdi",
+    cliente_id: "usr-sofia-valenzuela",
+    cliente_nombre: "Constructora Arcos S.A.",
+    nombre_obra: "Nave Industrial Alberdi",
+    direccion: "Bv. Rondeau 3400",
+    ciudad: "Rosario Norte",
+    responsable_contacto: "Maestro Mayor Marcos Díaz",
+    telefono_contacto: "+54 9 341 555-4321",
+    coordenadas_gps: "-32.9100, -60.6800",
+    activa: true,
+    fecha_inicio: "15/03/2026",
+  },
+];
+
+// ==========================================
+// RED VERTIA: PROFESIONALES DE SERVICIOS
+// ==========================================
+export type RubroProfesional =
+  | "Gasista Matriculado"
+  | "Plomero / Sanitarista"
+  | "Electricista"
+  | "Albañil / Constructor"
+  | "Carpintero"
+  | "Techista"
+  | "Pintor / Terminaciones"
+  | "Herrero / Cerrajero";
+
+export interface ProfesionalServicio {
+  id: string;
+  nombre: string;
+  cuit_rut?: string;
+  rubro: RubroProfesional;
+  matricula?: string;
+  telefono: string;
+  email?: string;
+  ciudad: string;
+  zona_cobertura: string;
+  calificacion: number;
+  trabajos_completados: number;
+  activo: boolean;
+  tarifa_hora_estimada?: number;
+  created_at: string;
+}
+
+export type EstadoSolicitudServicio =
+  | "Solicitado"
+  | "Asignado"
+  | "En ejecución"
+  | "Finalizado con Conformidad"
+  | "Liquidado y Pagado";
+
+export interface SolicitudServicio {
+  id: string;
+  folio: string;
+  cliente_id: string;
+  cliente_nombre: string;
+  obra_id?: string;
+  obra_nombre: string;
+  rubro: RubroProfesional;
+  descripcion_tarea: string;
+  fecha_requerida: string;
+  profesional_id?: string;
+  profesional_nombre?: string;
+  costo_estimado: number;
+  costo_mano_obra: number;
+  comision_vertia: number;
+  cobrado_cliente: boolean;
+  fecha_cobro?: string;
+  pagado_profesional: boolean;
+  fecha_pago?: string;
+  conformidad_cliente: boolean;
+  estado: EstadoSolicitudServicio;
+  created_at: string;
+}
+
+export const MOCK_PROFESIONALES: ProfesionalServicio[] = [
+  {
+    id: "prof-001",
+    nombre: "Roberto Gómez",
+    cuit_rut: "20-28495123-4",
+    rubro: "Gasista Matriculado",
+    matricula: "MAT-GAS-4491",
+    telefono: "+54 9 341 511-2233",
+    email: "roberto.gasista@gmail.com",
+    ciudad: "Rosario",
+    zona_cobertura: "Rosario y Gran Rosario (Radio 30km)",
+    calificacion: 4.9,
+    trabajos_completados: 42,
+    activo: true,
+    tarifa_hora_estimada: 12000,
+    created_at: "2025-06-10",
+  },
+  {
+    id: "prof-002",
+    nombre: "Claudio Benítez",
+    cuit_rut: "20-25894120-7",
+    rubro: "Plomero / Sanitarista",
+    matricula: "SAN-ROS-1082",
+    telefono: "+54 9 341 533-4455",
+    email: "claudio.sanitarista@hotmail.com",
+    ciudad: "Rosario",
+    zona_cobertura: "Rosario Centro y Sur",
+    calificacion: 4.8,
+    trabajos_completados: 67,
+    activo: true,
+    tarifa_hora_estimada: 10500,
+    created_at: "2025-05-18",
+  },
+  {
+    id: "prof-003",
+    nombre: "Esteban Quiroga",
+    cuit_rut: "20-31489752-1",
+    rubro: "Electricista",
+    matricula: "ELE-CAT-309",
+    telefono: "+54 9 341 577-8899",
+    email: "esteban.electrico@gmail.com",
+    ciudad: "Rosario",
+    zona_cobertura: "Rosario y Funes",
+    calificacion: 5.0,
+    trabajos_completados: 55,
+    activo: true,
+    tarifa_hora_estimada: 13500,
+    created_at: "2025-07-22",
+  },
+  {
+    id: "prof-004",
+    nombre: "Cuadrilla Maestro Raúl",
+    cuit_rut: "23-22194852-9",
+    rubro: "Albañil / Constructor",
+    matricula: "UOCRA-58210",
+    telefono: "+54 9 341 599-1122",
+    email: "cuadrilla.raul@obras.com",
+    ciudad: "Rosario",
+    zona_cobertura: "Toda la provincia",
+    calificacion: 4.7,
+    trabajos_completados: 89,
+    activo: true,
+    tarifa_hora_estimada: 18000,
+    created_at: "2025-03-01",
+  },
+  {
+    id: "prof-005",
+    nombre: "Taller & Carpintería Los Robles",
+    cuit_rut: "30-71894523-2",
+    rubro: "Carpintero",
+    matricula: "CARP-REG-049",
+    telefono: "+54 9 341 544-7788",
+    email: "robles.carpinteria@gmail.com",
+    ciudad: "Rosario",
+    zona_cobertura: "Rosario, Roldán y San Lorenzo",
+    calificacion: 4.9,
+    trabajos_completados: 31,
+    activo: true,
+    tarifa_hora_estimada: 14000,
+    created_at: "2025-08-14",
+  },
+];
+
+export const MOCK_SOLICITUDES_SERVICIOS: SolicitudServicio[] = [
+  {
+    id: "srv-001",
+    folio: "SRV-2026-081",
+    cliente_id: "usr-sofia-valenzuela",
+    cliente_nombre: "Constructora Arcos S.A.",
+    obra_id: "obra-torre-sur",
+    obra_nombre: "Torre Bellini Sur (Pellegrini 2800)",
+    rubro: "Gasista Matriculado",
+    descripcion_tarea: "Inspección de prueba de hermeticidad y conexión de montante principal en ducto de ventilación.",
+    fecha_requerida: "22/11/2026",
+    profesional_id: "prof-001",
+    profesional_nombre: "Roberto Gómez",
+    costo_estimado: 85000,
+    costo_mano_obra: 72000,
+    comision_vertia: 13000,
+    cobrado_cliente: true,
+    fecha_cobro: "18/11/2026",
+    pagado_profesional: false,
+    conformidad_cliente: true,
+    estado: "Finalizado con Conformidad",
+    created_at: "18/11/2026",
+  },
+  {
+    id: "srv-002",
+    folio: "SRV-2026-082",
+    cliente_id: "usr-sofia-valenzuela",
+    cliente_nombre: "Constructora Arcos S.A.",
+    obra_id: "obra-complejo-las-heras",
+    obra_nombre: "Complejo Residencial Las Heras",
+    rubro: "Electricista",
+    descripcion_tarea: "Tendido de bandejas portacables y cableado trifásico para bomba de elevación y subsuelo.",
+    fecha_requerida: "25/11/2026",
+    profesional_id: "prof-003",
+    profesional_nombre: "Esteban Quiroga",
+    costo_estimado: 120000,
+    costo_mano_obra: 102000,
+    comision_vertia: 18000,
+    cobrado_cliente: true,
+    fecha_cobro: "19/11/2026",
+    pagado_profesional: false,
+    conformidad_cliente: false,
+    estado: "En ejecución",
+    created_at: "19/11/2026",
+  },
+];
 
 // ==========================================
 // TENANTS REGISTRADOS

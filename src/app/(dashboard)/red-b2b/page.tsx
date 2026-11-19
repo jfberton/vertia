@@ -114,7 +114,7 @@ export default function RedB2BPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900">
-                Red Colaborativa B2B de Corralones & Suministros
+                Red Vertia de Corralones & Suministros
               </h1>
               <p className="text-xs text-slate-500">
                 Interconexión de stock entre corralones asociados a VERTIA con filtro logístico por radio de flete.
@@ -226,13 +226,13 @@ export default function RedB2BPage() {
         ))}
       </div>
 
-      {/* Modal de Solicitud de Stock B2B */}
+      {/* Modal de Solicitud de Stock Red Vertia */}
       {modalContacto && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <Card className="bg-white border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4 rounded-xl">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
-                Red Colaborativa VERTIA
+                Red Vertia
               </span>
               <h3 className="text-base font-bold text-slate-900">
                 Solicitud a {modalContacto.empresa}

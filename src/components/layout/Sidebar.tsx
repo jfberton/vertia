@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ShieldCheck,
   Package,
+  HardHat,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,23 +53,29 @@ export function Sidebar() {
       badge: "Órdenes",
     },
     {
-      label: "Red Colaborativa B2B",
+      label: "Red Vertia",
       href: "/red-b2b",
       icon: Globe2,
       badge: "Red",
     },
   ];
 
-  // Menú para Cliente / Obra
+  // Menú exclusivo para Cliente / Obra (Constructora)
   const menuCliente = [
     {
-      label: "Mis Solicitudes de Material",
-      href: "/ordenes",
-      icon: ClipboardList,
+      label: "Mi Portal de Obras",
+      href: "/cliente",
+      icon: HardHat,
       badge: "Obras",
     },
     {
-      label: "Validación & Cierres",
+      label: "Catálogo Red Vertia",
+      href: "/red-b2b",
+      icon: Globe2,
+      badge: "Precios",
+    },
+    {
+      label: "Evidencias & Recepción",
       href: "/evidencias",
       icon: Camera,
       badge: "Fotos",
@@ -89,7 +96,7 @@ export function Sidebar() {
       badge: "Core",
     },
     {
-      label: "Red Colaborativa B2B",
+      label: "Red Vertia",
       href: "/red-b2b",
       icon: Globe2,
       badge: "Red",
@@ -101,7 +108,7 @@ export function Sidebar() {
       badge: "VT-1048",
     },
     {
-      label: "Catálogo Red B2B (Auditoría)",
+      label: "Catálogo Red Vertia (Auditoría)",
       href: "/productos",
       icon: Boxes,
     },
@@ -145,10 +152,12 @@ export function Sidebar() {
             className={`ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded border ${
               isCorralon
                 ? "bg-purple-50 text-purple-700 border-purple-200"
+                : isCliente
+                ? "bg-teal-50 text-teal-700 border-teal-200"
                 : "bg-indigo-50 text-indigo-700 border-indigo-100"
             }`}
           >
-            {isCorralon ? "Corralón" : "Plataforma"}
+            {isCorralon ? "Corralón" : isCliente ? "Constructora" : "Plataforma"}
           </span>
         </div>
       </div>

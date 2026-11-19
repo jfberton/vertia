@@ -56,7 +56,7 @@ export default function LoginPage() {
         if (loggedUser?.tipo === "corralon") {
           router.push(resolveDestination("/productos"));
         } else if (loggedUser?.tipo === "cliente") {
-          router.push(resolveDestination("/ordenes"));
+          router.push(resolveDestination("/cliente"));
         } else {
           router.push(resolveDestination("/dashboard"));
         }
@@ -76,7 +76,7 @@ export default function LoginPage() {
     if (tipo === "corralon") {
       router.push(resolveDestination("/productos"));
     } else if (tipo === "cliente") {
-      router.push(resolveDestination("/ordenes"));
+      router.push(resolveDestination("/cliente"));
     } else {
       router.push(resolveDestination("/dashboard"));
     }

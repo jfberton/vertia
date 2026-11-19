@@ -90,6 +90,9 @@ export interface Producto {
   cantidad_real: number;
   cantidad_reservada: number; // Comprometido en órdenes
   cantidad_disponible: number; // Real - Reservado
+  modo_disponible?: "automatico" | "cupo_manual";
+  cupo_manual_red?: number;
+  publicado_en_red?: boolean;
   cantidad_minima?: number | null;
   cantidad_maxima?: number | null;
   imagen_url?: string | null;
@@ -107,6 +110,20 @@ export interface Cliente {
   ciudad?: string | null;
   pais?: string | null;
   cuit_rut_taxid?: string | null;
+}
+
+export interface ObraCliente {
+  id: string;
+  cliente_id: string;
+  cliente_nombre: string;
+  nombre_obra: string;
+  direccion: string;
+  ciudad: string;
+  responsable_contacto: string;
+  telefono_contacto: string;
+  coordenadas_gps?: string;
+  activa: boolean;
+  fecha_inicio?: string;
 }
 
 export interface Proveedor {
@@ -217,7 +234,7 @@ export interface BackOrderItem {
   proveedor?: Proveedor;
 }
 
-// Red Colaborativa B2B
+// Red Vertia
 export interface PublicacionRedStock {
   id: string;
   tenant_id_ofertante: string;
@@ -252,4 +269,67 @@ export interface SolicitudRedStock {
     nombre: string;
     email_contacto?: string | null;
   };
+}
+
+// ---------------------------------------------------------------------------
+// PROFESIONALES Y SERVICIOS DE LA RED VERTIA
+// ---------------------------------------------------------------------------
+
+export type RubroProfesional =
+  | "Gasista Matriculado"
+  | "Plomero / Sanitarista"
+  | "Electricista"
+  | "Albañil / Constructor"
+  | "Carpintero"
+  | "Techista"
+  | "Pintor / Terminaciones"
+  | "Herrero / Cerrajero";
+
+export interface ProfesionalServicio {
+  id: string;
+  nombre: string;
+  cuit_rut?: string;
+  rubro: RubroProfesional;
+  matricula?: string;
+  telefono: string;
+  email?: string;
+  ciudad: string;
+  zona_cobertura: string;
+  calificacion: number; // 1-5 estrellas
+  trabajos_completados: number;
+  activo: boolean;
+  tarifa_hora_estimada?: number;
+  created_at: string;
+}
+
+export type EstadoSolicitudServicio =
+  | "Solicitado"
+  | "Asignado"
+  | "En ejecución"
+  | "Finalizado con Conformidad"
+  | "Liquidado y Pagado";
+
+export interface SolicitudServicio {
+  id: string;
+  folio: string; // ej. "SRV-2026-001"
+  cliente_id: string;
+  cliente_nombre: string;
+  obra_id?: string;
+  obra_nombre: string;
+  rubro: RubroProfesional;
+  descripcion_tarea: string;
+  fecha_requerida: string;
+  profesional_id?: string;
+  profesional_nombre?: string;
+  costo_estimado: number;
+  costo_mano_obra: number;
+  comision_vertia: number;
+  cobrado_cliente: boolean;
+  fecha_cobro?: string;
+  pagado_profesional: boolean;
+  fecha_pago?: string;
+  conformidad_cliente: boolean;
+  evidencias_fotos?: string[];
+  estado: EstadoSolicitudServicio;
+  created_at: string;
 }

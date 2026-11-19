@@ -49,7 +49,7 @@ export function DashboardAuthGuard({ children }: DashboardAuthGuardProps) {
       return {
         status: "forbidden" as const,
         reason: "El módulo de Administración de Plataforma es exclusivo para la Dirección y Super Administradores.",
-        redirectTo: isCorralon ? "/productos" : "/ordenes",
+        redirectTo: isCorralon ? "/productos" : "/cliente",
       };
     }
 
@@ -58,7 +58,7 @@ export function DashboardAuthGuard({ children }: DashboardAuthGuardProps) {
       return {
         status: "forbidden" as const,
         reason: "El Centro de Operaciones Global está reservado para Super Administradores.",
-        redirectTo: isCorralon ? "/productos" : "/ordenes",
+        redirectTo: isCorralon ? "/productos" : "/cliente",
       };
     }
 
@@ -87,7 +87,7 @@ export function DashboardAuthGuard({ children }: DashboardAuthGuardProps) {
       return {
         status: "forbidden" as const,
         reason: "Tu cuenta de Contratista / Obra no cuenta con módulos de gestión de galpón ni catálogo de venta.",
-        redirectTo: "/ordenes",
+        redirectTo: "/cliente",
       };
     }
 
