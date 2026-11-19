@@ -19,6 +19,7 @@ import {
   Check,
   Building2,
   Info,
+  ShieldCheck,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ interface WarehouseCellInspectorProps {
   onOpenSlottingWithCell: (cell: SpatialCell) => void;
   onClearCellStock: (cellId: string) => void;
   onClose?: () => void;
+  readOnly?: boolean;
 }
 
 export function WarehouseCellInspector({
@@ -39,6 +41,7 @@ export function WarehouseCellInspector({
   onOpenSlottingWithCell,
   onClearCellStock,
   onClose,
+  readOnly,
 }: WarehouseCellInspectorProps) {
   const [copied, setCopied] = useState(false);
 
@@ -276,28 +279,35 @@ export function WarehouseCellInspector({
         </div>
 
         {/* Botones de Acción */}
-        <div className="pt-2 space-y-2">
-          {hasSpace && (
-            <Button
-              onClick={() => onOpenSlottingWithCell(cell)}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs h-9 shadow-xs"
-            >
-              <PackagePlus className="w-4 h-4 mr-1.5" />
-              Acomodar Stock Aquí (Slotting)
-            </Button>
-          )}
+        {readOnly ? (
+          <div className="pt-2 p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-500 text-xs flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-slate-400 shrink-0" />
+            <span>Auditoría WMS: La asignación y desalojo de celdas es exclusivo del operario del galpón.</span>
+          </div>
+        ) : (
+          <div className="pt-2 space-y-2">
+            {hasSpace && (
+              <Button
+                onClick={() => onOpenSlottingWithCell(cell)}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs h-9 shadow-xs"
+              >
+                <PackagePlus className="w-4 h-4 mr-1.5" />
+                Acomodar Stock Aquí (Slotting)
+              </Button>
+            )}
 
-          {cell.producto_actual && (
-            <Button
-              variant="outline"
-              onClick={() => onClearCellStock(cell.id)}
-              className="w-full text-slate-600 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 text-xs h-8 font-medium"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-              Desalojar Celda (Mover a Pulmón)
-            </Button>
-          )}
-        </div>
+            {cell.producto_actual && (
+              <Button
+                variant="outline"
+                onClick={() => onClearCellStock(cell.id)}
+                className="w-full text-slate-600 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 text-xs h-8 font-medium"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                Desalojar Celda (Mover a Pulmón)
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );

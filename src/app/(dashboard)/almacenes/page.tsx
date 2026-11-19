@@ -446,13 +446,20 @@ export default function AlmacenesPage() {
             </div>
           )}
 
-          <Button
-            onClick={() => setModalNuevoAlmacen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
-          >
-            <Plus className="w-4 h-4 mr-1.5" />
-            Nuevo Almacén / Galpón
-          </Button>
+          {isSuperAdmin ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold shadow-2xs">
+              <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Auditoría WMS · Solo Lectura</span>
+            </div>
+          ) : (
+            <Button
+              onClick={() => setModalNuevoAlmacen(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              Nuevo Almacén / Galpón
+            </Button>
+          )}
         </div>
       </div>
 

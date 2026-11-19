@@ -58,6 +58,26 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 
 ## 📝 4. Registro Cronológico de Decisiones y Cambios
 
+### [2026-11-18] - Modo Solo Lectura / Auditoría para Administradores de Vertia en Módulos de Corralón (InvenTrack)
+- **Autor / Agente:** Lead Architect (Antigravity).
+- **Requerimiento del Negocio (Humberto / Vertia):**
+  - Los administradores de Vertia (`super_admin` / Operadores del Meta-Admin) poseen visibilidad de stock global (Stock Real y Stock Disponible), pero **tienen terminantemente prohibido alterar el inventario físico, crear productos o modificar la visibilidad de los corralones**.
+  - La administración del inventario, la creación de materiales, la estiba/slotting físico en celdas de galpón y el toggle de visibilidad para compartir en la Red B2B son **facultades exclusivas del Administrador y personal del Corralón** a través de InvenTrack.
+- **Implementación Arquitectónica y UI/UX:**
+  1. **Catálogo de Materiales (`src/app/(dashboard)/productos/page.tsx`):**
+     - Ocultación del botón "Registrar Material" para Super Admin, reemplazado por un indicador visual claro: `Modo Auditoría · Solo Lectura`.
+     - Deshabilitación del toggle B2B ("Publicar en Red") para el Super Admin con tooltip explicativo ("Solo la empresa propietaria puede publicar en la Red B2B").
+     - Ocultación de la columna de acciones operativas (editar/ajustar) cuando el usuario es Super Admin.
+     - Bloqueo en el handler de mutación para rechazar programmaticamente cualquier intento de edición o alta no autorizada.
+  2. **Galpones y Matriz WMS (`src/app/(dashboard)/almacenes/page.tsx`):**
+     - Reemplazo del botón "Nuevo Almacén / Galpón" por una insignia informativa de `Auditoría WMS · Solo Lectura`.
+     - Inyección de la propiedad `readOnly={isSuperAdmin}` en el inspector lateral de celdas.
+  3. **Inspector de Celdas (`src/components/warehouses/WarehouseCellInspector.tsx`):**
+     - Al estar en `readOnly`, se suprimen los botones de acción física ("Ubicar Mercadería", "Mover Lote", "Ajustar Stock") y se despliega una placa de estado "Modo Auditoría · Permisos de solo lectura".
+- **Control de Calidad:**
+  - Suite automatizada `npm test`: **90 / 90 tests pasando al 100% (0 fallos)**.
+  - Compilación de producción con Turbopack `npm run build`: Exitosa en todas las 13 rutas estáticas.
+
 ### [2026-11-18] - Implementación de Guardián de Rutas RBAC y Protección contra Accesos No Autenticados
 - **Autor / Agente:** Lead Architect (Antigravity).
 - **Problema Detectado:** Al acceder directamente a rutas internas (como `/evidencias`, `/almacenes`, etc.) sin sesión iniciada, el contexto `AuthContext` asignaba automáticamente al usuario Super Admin por defecto (`MOCK_USERS[0]`), permitiendo la navegación anónima sin pasar por el login.

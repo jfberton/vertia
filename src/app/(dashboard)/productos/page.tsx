@@ -82,6 +82,7 @@ export default function ProductosPage() {
   }, [productos, effectiveTenantId, busqueda, categoriaFiltro]);
 
   const togglePublicarRed = (id: string) => {
+    if (isSuperAdmin) return;
     setProductos((prev) =>
       prev.map((p) => {
         if (p.id === id) {
@@ -101,6 +102,7 @@ export default function ProductosPage() {
 
   const handleCrearProducto = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSuperAdmin) return;
     if (!nuevoNombre || !nuevoCodigo) return;
 
     const real = Number(nuevoStockReal) || 0;
@@ -194,13 +196,20 @@ export default function ProductosPage() {
             </div>
           )}
 
-          <Button
-            onClick={() => setModalNuevoAbierto(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
-          >
-            <Plus className="w-4 h-4 mr-1.5" />
-            Registrar Material
-          </Button>
+          {isSuperAdmin ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold shadow-2xs">
+              <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Modo Auditoría · Solo Lectura</span>
+            </div>
+          ) : (
+            <Button
+              onClick={() => setModalNuevoAbierto(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              Registrar Material
+            </Button>
+          )}
         </div>
       </div>
 
@@ -293,7 +302,7 @@ export default function ProductosPage() {
                   Stock Disponible
                 </th>
                 <th className="py-3 px-4 text-center">Publicación Red</th>
-                <th className="py-3 px-4 text-right">Acciones</th>
+                {!isSuperAdmin && <th className="py-3 px-4 text-right">Acciones</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -372,8 +381,12 @@ export default function ProductosPage() {
                       {/* Red B2B Toggle */}
                       <td className="py-3.5 px-4 text-center">
                         <button
-                          onClick={() => togglePublicarRed(p.id)}
+                          onClick={() => !isSuperAdmin && togglePublicarRed(p.id)}
+                          disabled={isSuperAdmin}
+                          title={isSuperAdmin ? "Solo el administrador del corralón puede definir la visibilidad en red" : "Cambiar publicación en Red B2B"}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
+                            isSuperAdmin ? "cursor-default opacity-85" : "cursor-pointer"
+                          } ${
                             p.publicado_en_red
                               ? "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
                               : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
@@ -384,17 +397,19 @@ export default function ProductosPage() {
                         </button>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-slate-400 hover:text-slate-700"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </td>
+                      {!isSuperAdmin && (
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-slate-400 hover:text-slate-700"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
