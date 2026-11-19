@@ -65,8 +65,11 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
   - La propuesta de valor carecía de un bloque previo que expusiera claramente los dolores y el desorden analógico que la plataforma resuelve.
 - **Solución y Mejoras Implementadas:**
   1. **Sección Superior de Dolores y Diagnóstico de la Industria (`#problema`):**
-     - 4 tarjetas destacadas con alertas cromáticas:
-       1. *Caos por WhatsApp & Audios Perdidos* (pedidos informales sin trazabilidad).
+     - 4 tarjetas destacadas con alertas cromáticas y foco en costos reales:
+       1. *Entregas Incumplidas & Obreros Parados* (Costo crítico: cuadrillas de 10 a 15 albañiles esperando material demorado, generando jornales perdidos que el contratista debe abonar igual).
+       2. *Stock Fantasma & Sobreventas* (corralones vendiendo mercadería ya comprometida).
+       3. *Descoordinación por WhatsApp* (pedidos informales sin cotización formal ni trazabilidad).
+       4. *Pagos a Ciegas & Remitos Rotos* (desconfianza financiera y remitos de papel extraviados sin constancia).
        2. *Stock Fantasma & Sobreventas* (corralones vendiendo mercadería ya comprometida).
        3. *Pagos a Ciegas & Riesgo de Cobro* (desconfianza financiera entre constructora y corralón).
        4. *Remitos de Papel Extraviados* (falta de evidencias de entrega en destino).

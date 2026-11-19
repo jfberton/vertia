@@ -187,7 +187,7 @@ export default function LandingPage() {
         <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
           Plataforma B2B que sincroniza en tiempo real a <strong className="text-white">Constructoras</strong>,{" "}
           <strong className="text-white">Corralones de Materiales</strong> y la{" "}
-          <strong className="text-white">Mesa de Operaciones de Vertia</strong>. Sin remitos perdidos, sin sobreventas de stock y con custodia de pagos.
+          <strong className="text-white">Mesa de Operaciones de Vertia</strong>. Sin cuadrillas paradas esperando camiones que no llegan, sin sobreventas de stock y con custodia de pagos.
         </p>
 
         <div className="mt-9 flex flex-col sm:flex-row gap-4 items-center justify-center">
@@ -213,8 +213,8 @@ export default function LandingPage() {
         {/* Métricas destacadas en vivo */}
         <div className="mt-14 pt-8 border-t border-slate-900 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
           <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/60">
-            <div className="text-2xl font-black text-white">0%</div>
-            <div className="text-xs text-slate-400 mt-0.5">Sobreventas con Invariante de Dual Stock</div>
+            <div className="text-2xl font-black text-rose-400">0 hs</div>
+            <div className="text-xs text-slate-400 mt-0.5">Cuadrillas paradas: despachos en ventana horaria</div>
           </div>
           <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/60">
             <div className="text-2xl font-black text-indigo-400">R-091</div>
@@ -247,24 +247,27 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Dolor 1 */}
-            <div className="p-6 rounded-2xl bg-slate-900/80 border border-rose-950/60 hover:border-rose-500/30 transition-all group flex flex-col justify-between">
+            {/* Dolor 1 - DESTACADO: Cuadrillas Paradas por Entregas Incumplidas */}
+            <div className="p-6 rounded-2xl bg-slate-900/90 border-2 border-rose-500/40 hover:border-rose-500/70 shadow-lg shadow-rose-950/20 transition-all group flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-rose-500 text-white text-[9px] font-black uppercase px-2.5 py-0.5 rounded-bl-lg tracking-wider">
+                Costo Crítico
+              </div>
               <div>
-                <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                  <MessageSquareOff className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <Clock className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-white text-base">Caos por WhatsApp & Audios Perdidos</h3>
+                <h3 className="font-bold text-white text-base">Entregas Incumplidas & Obreros Parados</h3>
                 <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Pedidos de materiales tomados por chat informal, audios que nadie encuentra, sin confirmación de precio ni registro de qué capataz autorizó el flete.
+                  El corralón promete el material para las 8:00 AM y no llega. Tener a <strong className="text-slate-200">10 o 15 obreros parados sin poder trabajar</strong> representa una sangría de dinero directo en jornales que el contratista debe pagar igual.
                 </p>
               </div>
-              <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-rose-400/90 font-medium">
-                <XCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>Resultado: Entregas equivocadas y reclamos</span>
+              <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-rose-400 font-semibold">
+                <XCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>Impacto: Pérdida económica de horas/hombre no productivas</span>
               </div>
             </div>
 
-            {/* Dolor 2 */}
+            {/* Dolor 2 - Stock Fantasma */}
             <div className="p-6 rounded-2xl bg-slate-900/80 border border-amber-950/60 hover:border-amber-500/30 transition-all group flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
@@ -272,46 +275,46 @@ export default function LandingPage() {
                 </div>
                 <h3 className="font-bold text-white text-base">Stock Fantasma & Sobreventas</h3>
                 <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  El corralón vende lo que ve en estantería sin descontar lo que ya está comprometido para otra obra. El camión llega al galpón y el material no existe.
+                  El corralón confirma el pedido mirando el stock total de estantería, sin descontar lo que ya comprometió para otros clientes. Cuando el flete llega a cargar, el material ya no está.
                 </p>
               </div>
               <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-amber-400/90 font-medium">
                 <XCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>Resultado: Obra parada y fletes perdidos</span>
+                <span>Impacto: Camiones vacíos y reprogramaciones de obra</span>
               </div>
             </div>
 
-            {/* Dolor 3 */}
-            <div className="p-6 rounded-2xl bg-slate-900/80 border border-blue-950/60 hover:border-blue-500/30 transition-all group flex flex-col justify-between">
+            {/* Dolor 3 - Caos por WhatsApp */}
+            <div className="p-6 rounded-2xl bg-slate-900/80 border border-indigo-950/60 hover:border-indigo-500/30 transition-all group flex flex-col justify-between">
               <div>
-                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                  <Lock className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <MessageSquareOff className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-white text-base">Pagos a Ciegas & Desconfianza</h3>
+                <h3 className="font-bold text-white text-base">Descoordinación por WhatsApp</h3>
                 <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Constructoras obligadas a transferir por adelantado sin saber cuándo llega el flete, y proveedores o gremios con miedo a despachar sin cobranza respaldada.
+                  Requerimientos pasados por audios de chat, mensajes que se pierden entre fotos personales y falta de un documento formal de cotización antes del despacho a obra.
                 </p>
               </div>
-              <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-blue-400/90 font-medium">
+              <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-indigo-400/90 font-medium">
                 <XCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>Resultado: Fricción financiera y litigios</span>
+                <span>Impacto: Errores en pedidos y discusiones de precios</span>
               </div>
             </div>
 
-            {/* Dolor 4 */}
+            {/* Dolor 4 - Pagos a Ciegas & Remitos Perdidos */}
             <div className="p-6 rounded-2xl bg-slate-900/80 border border-purple-950/60 hover:border-purple-500/30 transition-all group flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                  <Camera className="w-6 h-6" />
+                  <Lock className="w-6 h-6" />
                 </div>
-                <h3 className="font-bold text-white text-base">Remitos de Papel que se Esfuman</h3>
+                <h3 className="font-bold text-white text-base">Pagos a Ciegas & Remitos Rotos</h3>
                 <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Papeles arrugados, mojados o manchados de cemento. Nadie sabe si se descargaron 80 o 100 bolsas, ni quién firmó en la obra al momento de la descarga.
+                  Constructoras que pagan por adelantado sin certeza de entrega, corralones con riesgo de impago y remitos de papel manchados que nadie puede auditar contablemente.
                 </p>
               </div>
               <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-purple-400/90 font-medium">
                 <XCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>Resultado: Diferencias contables imposibles de conciliar</span>
+                <span>Impacto: Disputas comerciales y falta de respaldo legal</span>
               </div>
             </div>
           </div>
@@ -415,6 +418,16 @@ export default function LandingPage() {
                     <div>
                       <span className="font-bold text-white text-xs block">Gestión de Obras en Paralelo</span>
                       <span className="text-slate-400 text-xs">Asigna cada pedido a una obra concreta con dirección, responsable y teléfono de recepción.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Cero Horas Perdidas: Ventanas Horarias de Entrega</span>
+                      <span className="text-slate-400 text-xs">El material llega en el horario comprometido. Tu cuadrilla no pierde jornadas laborales parada esperando camiones.</span>
                     </div>
                   </div>
 
