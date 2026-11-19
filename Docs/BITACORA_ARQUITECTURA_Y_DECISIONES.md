@@ -58,6 +58,24 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 
 ## 📝 4. Registro Cronológico de Decisiones y Cambios
 
+### [2026-11-19] - Integración de Identidad Visual Corporativa, Isologotipo SVG y Rediseño Hero con Imagen Real
+- **Autor / Agente:** Humberto / Federico Bertoncini & Lead Architect (Antigravity).
+- **Entregables y Mejoras Visuales:**
+  1. **Componente de Isologotipo Oficial (`src/components/brand/VertiaLogo.tsx`):**
+     - Isotipo SVG geométrico con degradado cian-azul-violeta (#14CBE1 -> #3975E8 -> #9A60EA).
+     - Tipografía corporativa VERTIA con subtítulo *RED DE CONSTRUCCIÓN & SUMINISTRO*.
+     - Soporte para variante `dark` en pie de página y variante compacta.
+  2. **Fotografía Real de Obra y Estilo Corporativo Luminoso (`public/images/vertia-construction-site.jpg` y `globals.css`):**
+     - Hero con imagen fotográfica de obra de gran envergadura (grúas y trabajadores), con gradiente y overlay institucional (`.landing-hero-overlay` y `.landing-hero-accent`).
+     - Transición a fondo claro corporativo (`#f4f8fd`) y tarjetas con bordes suaves y sombras elegantes (`.vertia-landing`).
+  3. **Verificación de Navegación y Cableado de Enlaces:**
+     - Enlaces principales ruteados hacia `/login`, `/dashboard`, `/cliente` y `/productos` con redirección fluida a través del guardián de autenticación.
+     - Pruebas y compilación 100% verificadas.
+- **Control de Calidad:**
+  - Suite automatizada: **103 / 103 pruebas superadas al 100% (0 fallos)**.
+  - Compilación de producción con Turbopack: **14 / 14 rutas estáticas generadas limpiamente**.
+
+
 ### [2026-11-19] - Adaptación Comercial del Lenguaje en Landing Page: InvenTrack para Depósito, Vertia como Garante y Bolsa de Profesionales
 - **Autor / Agente:** Lead Architect (Antigravity).
 - **Directrices Comerciales y de Negocio (Humberto / Vertia):**

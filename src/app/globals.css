@@ -22,5 +22,130 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.landing-hero-overlay {
+  background: linear-gradient(90deg, rgba(7, 27, 63, 0.98) 0%, rgba(7, 27, 63, 0.84) 43%, rgba(7, 27, 63, 0.2) 100%);
+}
+
+.landing-hero-accent {
+  background: linear-gradient(145deg, rgba(107, 79, 224, 0.82), rgba(22, 196, 207, 0.5));
+  clip-path: polygon(38% 0, 100% 0, 62% 100%, 0 100%);
+}
+
+.vertia-landing > section:not(.landing-hero) {
+  background: #ffffff;
+}
+
+.vertia-landing #problema,
+.vertia-landing #flujo {
+  background: #eef5fc;
+  border-color: #dce7f3;
+}
+
+.vertia-landing > section:not(.landing-hero) .text-white {
+  color: #071b3f !important;
+}
+
+.vertia-landing > section:not(.landing-hero) .text-white[class*="bg-indigo"],
+.vertia-landing > section:not(.landing-hero) .text-white[class*="bg-sky"],
+.vertia-landing > section:not(.landing-hero) .text-white[class*="bg-emerald"],
+.vertia-landing > section:not(.landing-hero) .text-white[class*="bg-rose"],
+.vertia-landing > section:not(.landing-hero) .text-white[class*="bg-gradient"] {
+  color: #ffffff !important;
+}
+
+.vertia-landing > section:not(.landing-hero) .text-slate-300,
+.vertia-landing > section:not(.landing-hero) .text-slate-400,
+.vertia-landing > section:not(.landing-hero) .text-slate-500 {
+  color: #5d718e !important;
+}
+
+.vertia-landing > section:not(.landing-hero) [class*="bg-slate-900"],
+.vertia-landing > section:not(.landing-hero) [class*="bg-slate-950"] {
+  background-color: #ffffff !important;
+}
+
+.vertia-landing > section:not(.landing-hero) [class*="border-slate-"] {
+  border-color: #dce7f3 !important;
+}
+
+.vertia-landing > section:not(.landing-hero) [class*="shadow-"] {
+  box-shadow: 0 12px 28px rgba(23, 57, 104, 0.08);
+}
+
+.vertia-landing #problema > div > div.grid > div,
+.vertia-landing #acceso > div > div.grid > a {
+  background: #ffffff !important;
+  border-color: #dce7f3 !important;
+  box-shadow: 0 10px 24px rgba(23, 57, 104, 0.08);
+}
+
+.vertia-landing #entornos > div > div.rounded-3xl {
+  background: #ffffff !important;
+  border-color: #dce7f3 !important;
+  box-shadow: 0 18px 42px rgba(23, 57, 104, 0.1);
+}
+
+.vertia-landing #entornos [class*="bg-slate-950"] {
+  background: #09265a !important;
+  border-color: #193c70 !important;
+}
+
+.vertia-landing #entornos [class*="bg-slate-950"] .text-white,
+.vertia-landing #entornos [class*="bg-slate-950"] .font-mono,
+.vertia-landing #entornos [class*="bg-slate-950"] [class*="text-slate-"] {
+  color: #eef5ff !important;
+}
+
+.vertia-landing #entornos [class*="bg-slate-950"] [class*="bg-slate-900"] {
+  background: #102f64 !important;
+  border-color: #254a7e !important;
+}
+
+.vertia-landing #flujo > div > div.rounded-3xl {
+  background: #071b3f !important;
+  border-color: #173867 !important;
+}
+
+.vertia-landing #flujo > div > div.rounded-3xl .text-white {
+  color: #ffffff !important;
+}
+
+.vertia-landing #flujo > div > div.rounded-3xl .text-slate-300,
+.vertia-landing #flujo > div > div.rounded-3xl .text-slate-400,
+.vertia-landing #flujo > div > div.rounded-3xl .text-slate-500 {
+  color: #c3d4e8 !important;
+}
+
+.vertia-landing footer {
+  background: #071b3f !important;
+  border-color: #173867 !important;
+}
+
+.vertia-landing footer .text-slate-300 {
+  color: #ffffff !important;
+}
+
+.vertia-landing footer .text-slate-400 {
+  color: #d9e6f8 !important;
+}
+
+.vertia-landing footer .text-slate-500,
+.vertia-landing footer .text-slate-600 {
+  color: #9fb5d1 !important;
+}
+
+@media (max-width: 640px) {
+  .landing-hero-overlay {
+    background: linear-gradient(180deg, rgba(7, 27, 63, 0.97) 0%, rgba(7, 27, 63, 0.88) 58%, rgba(7, 27, 63, 0.38) 100%);
+  }
+
+  .landing-hero-accent {
+    top: 42%;
+    right: -14%;
+    width: 46%;
+    height: 58%;
+  }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -36,6 +37,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { VertiaLogo } from "@/components/brand/VertiaLogo";
 
 export default function LandingPage() {
   const [entornoActivo, setEntornoActivo] = useState<"cliente" | "proveedor" | "vertia">("cliente");
@@ -112,54 +114,38 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
-      
-      {/* Glows y Luces de Fondo (Animación ambiental) */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-indigo-600/20 via-purple-600/10 to-transparent blur-3xl pointer-events-none -z-10" />
-      <div className="absolute top-[800px] right-0 w-[500px] h-[500px] bg-sky-600/10 blur-3xl pointer-events-none -z-10" />
-      <div className="absolute top-[1800px] left-0 w-[600px] h-[600px] bg-indigo-600/10 blur-3xl pointer-events-none -z-10" />
+    <div className="vertia-landing min-h-screen bg-[#f4f8fd] text-[#112b59] flex flex-col selection:bg-indigo-600 selection:text-white overflow-x-hidden">
 
       {/* ── HEADER DE NAVEGACIÓN ── */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80 transition-all">
+      <header className="landing-header sticky top-0 z-50 border-b border-slate-200/90 bg-white/90 backdrop-blur-md transition-all">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center font-extrabold text-white shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform">
-              V
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5">
-                VERTIA
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              </span>
-              <span className="text-[10px] text-slate-400 tracking-wider font-medium uppercase -mt-1">
-                Red de Construcción & Suministro
-              </span>
-            </div>
+          <Link href="/" aria-label="VERTIA - Inicio">
+            <VertiaLogo />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-full border border-slate-800 text-xs font-semibold text-slate-400">
-            <a href="#problema" className="px-3.5 py-1.5 rounded-full hover:text-white hover:bg-slate-800/60 transition-colors">
+          <nav className="hidden md:flex items-center gap-1 text-xs font-semibold text-slate-600">
+            <a href="#problema" className="px-3 py-1.5 rounded-full hover:text-indigo-700 hover:bg-indigo-50 transition-colors">
               Los Dolores
             </a>
-            <a href="#entornos" className="px-3.5 py-1.5 rounded-full hover:text-white hover:bg-slate-800/60 transition-colors">
+            <a href="#entornos" className="px-3 py-1.5 rounded-full hover:text-indigo-700 hover:bg-indigo-50 transition-colors">
               Los 3 Entornos
             </a>
-            <a href="#flujo" className="px-3.5 py-1.5 rounded-full hover:text-white hover:bg-slate-800/60 transition-colors">
+            <a href="#flujo" className="px-3 py-1.5 rounded-full hover:text-indigo-700 hover:bg-indigo-50 transition-colors">
               Flujo de Solicitud
             </a>
-            <a href="#acceso" className="px-3.5 py-1.5 rounded-full hover:text-white hover:bg-slate-800/60 transition-colors">
+            <a href="#acceso" className="px-3 py-1.5 rounded-full hover:text-indigo-700 hover:bg-indigo-50 transition-colors">
               Simulador 1-Click
             </a>
           </nav>
 
           <div className="flex items-center gap-2.5">
             <Link href="/login">
-              <Button variant="ghost" className="text-slate-300 hover:text-white hover:bg-slate-900 text-xs h-9 px-4">
+              <Button variant="ghost" className="text-slate-700 hover:text-indigo-700 hover:bg-indigo-50 text-xs h-9 px-4">
                 Iniciar Sesión
               </Button>
             </Link>
             <Link href="/dashboard">
-              <Button className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold h-9 px-4 shadow-lg shadow-indigo-600/30 transition-all hover:shadow-indigo-600/50">
+              <Button className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold h-9 px-4 shadow-lg shadow-indigo-600/25 transition-all hover:shadow-indigo-600/40">
                 Entrar a la Plataforma <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </Button>
             </Link>
@@ -168,15 +154,26 @@ export default function LandingPage() {
       </header>
 
       {/* ── HERO SECTION ── */}
-      <section className="max-w-7xl mx-auto px-6 pt-20 pb-20 text-center relative">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-xs font-semibold text-indigo-300 mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
+      <section className="landing-hero relative overflow-hidden">
+        <Image
+          src="/images/vertia-construction-site.jpg"
+          alt="Obra en construcción con grúas y trabajadores"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[62%_center]"
+        />
+        <div className="landing-hero-overlay absolute inset-0" />
+        <div className="landing-hero-accent absolute -right-16 -top-20 h-[140%] w-[36%]" />
+        <div className="max-w-7xl mx-auto px-6 pt-20 pb-20 relative z-10">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-violet-600/90 text-xs font-semibold text-white mb-8">
           <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
           <span>Evolución SaaS de InvenTrack para la Cadena de la Construcción</span>
           <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-          <span className="text-slate-400 font-normal">v2.0 Multi-Tenant</span>
+          <span className="text-indigo-100 font-normal">v2.0 Multi-Tenant</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white max-w-5xl mx-auto leading-[1.08]">
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white max-w-3xl leading-[1.08]">
           Menos fricción en la obra,{" "}
           <span className="bg-gradient-to-r from-indigo-400 via-violet-300 to-purple-400 bg-clip-text text-transparent">
             control total en el corralón
@@ -184,17 +181,17 @@ export default function LandingPage() {
           y pagos asegurados.
         </h1>
 
-        <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
+        <p className="mt-6 text-base sm:text-lg text-slate-100 max-w-2xl leading-relaxed">
           Plataforma que sincroniza en tiempo real a <strong className="text-white">Constructoras</strong>,{" "}
           <strong className="text-white">Corralones de Materiales</strong> y{" "}
           <strong className="text-white">Profesionales de la construcción</strong>. Sin cuadrillas paradas esperando camiones que no llegan, sin sobreventas de stock y con custodia de pagos.
         </p>
 
-        <div className="mt-9 flex flex-col sm:flex-row gap-4 items-center justify-center">
+        <div className="mt-9 flex flex-col sm:flex-row gap-4 items-start">
           <Link href="#entornos">
             <Button
               size="lg"
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm px-8 h-12 rounded-xl shadow-xl shadow-indigo-600/30 transition-all hover:scale-105"
+              className="bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white font-bold text-sm px-8 h-12 rounded-full shadow-xl shadow-indigo-900/30 transition-all hover:scale-[1.03]"
             >
               Conocer los 3 Entornos <ChevronDown className="w-4 h-4 ml-2" />
             </Button>
@@ -203,7 +200,7 @@ export default function LandingPage() {
             <Button
               size="lg"
               variant="outline"
-              className="border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-200 text-sm h-12 px-7 rounded-xl transition-all hover:border-slate-700"
+              className="border-white/35 bg-white/10 hover:bg-white/20 text-white text-sm h-12 px-7 rounded-full transition-all hover:border-white/60"
             >
               Demo Rápida (7 Perfiles) <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
@@ -211,23 +208,24 @@ export default function LandingPage() {
         </div>
 
         {/* Métricas destacadas en vivo */}
-        <div className="mt-14 pt-8 border-t border-slate-900 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
-          <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/60">
+        <div className="mt-14 pt-8 border-t border-white/20 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl text-left">
+          <div className="p-3 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm">
             <div className="text-2xl font-black text-rose-400">0 hs</div>
-            <div className="text-xs text-slate-400 mt-0.5">Cuadrillas paradas: despachos en ventana horaria</div>
+            <div className="text-xs text-slate-100 mt-0.5">Cuadrillas paradas: despachos en ventana horaria</div>
           </div>
-          <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/60">
+          <div className="p-3 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm">
             <div className="text-2xl font-black text-indigo-400">R-091</div>
-            <div className="text-xs text-slate-400 mt-0.5">Remitos legales con QR y firma digital</div>
+            <div className="text-xs text-slate-100 mt-0.5">Remitos legales con QR y firma digital</div>
           </div>
-          <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/60">
+          <div className="p-3 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm">
             <div className="text-2xl font-black text-emerald-400">&gt;90%</div>
-            <div className="text-xs text-slate-400 mt-0.5">Ahorro de datos: fotos comprimidas a WebP</div>
+            <div className="text-xs text-slate-100 mt-0.5">Ahorro de datos: fotos comprimidas a WebP</div>
           </div>
-          <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800/60">
+          <div className="p-3 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm">
             <div className="text-2xl font-black text-purple-400">Escrow</div>
-            <div className="text-xs text-slate-400 mt-0.5">Retención de fondos hasta la conformidad</div>
+            <div className="text-xs text-slate-100 mt-0.5">Retención de fondos hasta la conformidad</div>
           </div>
+        </div>
         </div>
       </section>
 
@@ -981,15 +979,7 @@ export default function LandingPage() {
       {/* ── FOOTER CORPORATIVO ── */}
       <footer className="border-t border-slate-900 bg-slate-950 py-12 text-slate-500 text-xs">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white text-xs">
-              V
-            </div>
-            <div>
-              <span className="font-bold text-slate-300 block">VERTIA / InvenTrack v2</span>
-              <span className="text-[11px] text-slate-500">Plataforma Integral para Construcciones, Corralones y Profesionales</span>
-            </div>
-          </div>
+          <VertiaLogo dark className="scale-90 origin-left" />
 
           <div className="flex items-center gap-6 text-[11px] text-slate-400">
             <a href="#problema" className="hover:text-white transition-colors">Dolores</a>
