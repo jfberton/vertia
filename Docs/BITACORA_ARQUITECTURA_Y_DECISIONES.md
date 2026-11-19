@@ -58,6 +58,29 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 
 ## 📝 4. Registro Cronológico de Decisiones y Cambios
 
+### [2026-11-19] - Adaptación Comercial del Lenguaje en Landing Page: InvenTrack para Depósito, Vertia como Garante y Bolsa de Profesionales
+- **Autor / Agente:** Lead Architect (Antigravity).
+- **Directrices Comerciales y de Negocio (Humberto / Vertia):**
+  1. **Eliminación de Jerga Tecnológica ("B2B", "WMS", "Staging", "Matriz 2D"):**
+     - Se reemplazó el anglicismo "B2B" por lenguaje natural y directo del sector: *"Plataforma que sincroniza en tiempo real a Constructoras, Corralones de Materiales y Profesionales de la construcción"*.
+     - Se renombró el tab del proveedor a: *"InvenTrack: Módulo de administración de depósitos y stock para la red Vertia"*.
+  2. **Propuesta de Doble Canal y Organización Física para Corralones:**
+     - Se resalta que el corralón puede administrar su depósito y atender sus ventas de mostrador habituales, y al mismo tiempo vender sus materiales o excedentes en la Red Vertia.
+     - Se reemplazó "Matriz 2D" por *"Ubica tus productos fácilmente"* describiendo pasillos, estanterías y niveles.
+     - Se explicaron operativamente el **Pulmón de Ingreso** (recepción y control de fábrica antes de guardar) y el **Pulmón de Egreso** (área de expedición donde la carga se prepara con antelación para que el flete no tenga demoras).
+  3. **Ocultamiento de la Cocina Interna del Operador en la Landing Pública:**
+     - En el Tab de Vertia no se exhiben métricas de backoffice administrativo (MRR, costo de licencias, facturación interna ni botones de "Inhabilitar WMS").
+     - Se reformuló para comunicar **el valor que Vertia aporta a los integrantes de la red**:
+       - Coordinación inteligente de pedidos ruteando por cercanía geográfica y stock real.
+       - **Resguardo seguro de pagos (Custodia Escrow):** el cliente paga sobre seguro y los fondos se liberan al corralón o al profesional contra remito firmado y conformidad.
+       - **Respaldo Inter-Corralones:** coordinación de apoyo entre corralones vecinos si hay imprevistos de flete, para que la obra nunca sufra horas perdidas con albañiles parados.
+  4. **Incorporación de la Bolsa de Trabajo para Profesionales y Gremios:**
+     - Se integró el llamado a electricistas, plomeros, sanitaristas y techistas matriculados para darse de alta con su perfil dentro de la Red Vertia, accediendo a una bolsa de trabajo directa con constructoras y cobro 100% garantizado por escrow.
+- **Control de Calidad:**
+  - Suite automatizada: **103 / 103 pruebas superadas al 100% (0 fallos)**.
+  - Compilación de producción con Turbopack: **14 / 14 rutas estáticas generadas limpiamente**.
+
+
 ### [2026-11-19] - Rediseño Integral de la Landing Page: Dolores de la Industria, 3 Entornos Interactivos y Stepper de Flujo
 - **Autor / Agente:** Lead Architect (Antigravity).
 - **Problema de UX Detectado:**

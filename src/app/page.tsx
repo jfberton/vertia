@@ -82,8 +82,8 @@ export default function LandingPage() {
       color: "from-emerald-500 to-teal-600",
       border: "border-emerald-500/40",
       badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-      titulo: "4. Picking WMS y Remito Oficial R-091",
-      descripcion: "El corralón prepara la carga con recolección guiada por coordenadas (Pasillo/Rack/Nivel), emite el remito legal con QR y lo traslada a la Zona de Embarque.",
+      titulo: "4. Preparación de Carga y Remito Oficial R-091",
+      descripcion: "El corralón prepara la carga con recolección rápida guiada por ubicación física (Pasillo/Estantería/Nivel), emite el remito legal con QR y lo traslada al pulmón de egreso.",
       evidencia: "Formulario oficial argentino R-091 con QR y patente de camión",
       estadoPill: "Carga Pickeada · Remito Emitido",
     },
@@ -132,7 +132,7 @@ export default function LandingPage() {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               </span>
               <span className="text-[10px] text-slate-400 tracking-wider font-medium uppercase -mt-1">
-                Ecosistema B2B
+                Red de Construcción & Suministro
               </span>
             </div>
           </Link>
@@ -185,9 +185,9 @@ export default function LandingPage() {
         </h1>
 
         <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
-          Plataforma B2B que sincroniza en tiempo real a <strong className="text-white">Constructoras</strong>,{" "}
-          <strong className="text-white">Corralones de Materiales</strong> y la{" "}
-          <strong className="text-white">Mesa de Operaciones de Vertia</strong>. Sin cuadrillas paradas esperando camiones que no llegan, sin sobreventas de stock y con custodia de pagos.
+          Plataforma que sincroniza en tiempo real a <strong className="text-white">Constructoras</strong>,{" "}
+          <strong className="text-white">Corralones de Materiales</strong> y{" "}
+          <strong className="text-white">Profesionales de la construcción</strong>. Sin cuadrillas paradas esperando camiones que no llegan, sin sobreventas de stock y con custodia de pagos.
         </p>
 
         <div className="mt-9 flex flex-col sm:flex-row gap-4 items-center justify-center">
@@ -527,13 +527,13 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center animate-in fade-in duration-300">
               <div className="lg:col-span-5 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold">
-                  <Warehouse className="w-3.5 h-3.5" /> Corralón de Materiales & Centro de Distribución
+                  <Warehouse className="w-3.5 h-3.5" /> Corralón de Materiales & Distribución
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-black text-white">
-                  InvenTrack v2: WMS de Depósito, Matriz 2D y Dual Stock
+                  InvenTrack: Módulo de administración de depósitos y stock para la red Vertia
                 </h3>
                 <p className="text-slate-300 text-sm leading-relaxed">
-                  El sistema operativo interno y privado del corralón. El personal organiza su galpón físico por pasillos, controla el stock real vs disponible, pickea pedidos y emite remitos oficiales R-091 con QR.
+                  El sistema que te permite administrar tus depósitos propios y tus ventas de mostrador habituales, y al mismo tiempo abrir un nuevo canal directo para vender dentro de la Red Vertia.
                 </p>
 
                 <div className="space-y-3 pt-2">
@@ -542,8 +542,8 @@ export default function LandingPage() {
                       <Check className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <span className="font-bold text-white text-xs block">Invariante de Dual Stock</span>
-                      <span className="text-slate-400 text-xs font-mono">Stock Disponible = Stock Real - Stock Comprometido. Nunca sobrevende material reservado.</span>
+                      <span className="font-bold text-white text-xs block">Ventas de Mostrador + Ventas en la Red Vertia</span>
+                      <span className="text-slate-400 text-xs">Manejá tus clientes de siempre en el local y publicá excedentes o catálogo para recibir pedidos directos de constructoras de la red.</span>
                     </div>
                   </div>
 
@@ -552,8 +552,8 @@ export default function LandingPage() {
                       <Check className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <span className="font-bold text-white text-xs block">Matriz 2D & Zona de Embarque (Staging)</span>
-                      <span className="text-slate-400 text-xs">Ubicaciones exactas (P1-R02-E3-N2) y pulmón de salida donde la mercadería pickeada espera al camión.</span>
+                      <span className="font-bold text-white text-xs block">Control de Stock Real vs. Comprometido (Dual Stock)</span>
+                      <span className="text-slate-400 text-xs">Sabés al instante qué mercadería tenés libre para vender en mostrador o en la red, sin comprometer nunca lo que ya tenés vendido para otra obra.</span>
                     </div>
                   </div>
 
@@ -562,8 +562,18 @@ export default function LandingPage() {
                       <Check className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <span className="font-bold text-white text-xs block">Cupo Comercial & Privacidad Absoluta</span>
-                      <span className="text-slate-400 text-xs">El corralón decide qué publica en la Red B2B. Los operadores de Vertia no pueden alterar su stock interno.</span>
+                      <span className="font-bold text-white text-xs block">Ubica tus productos fácilmente</span>
+                      <span className="text-slate-400 text-xs">Organizá tu depósito con códigos claros de ubicación física (pasillo, estantería y nivel) para que tus operarios encuentren y preparen el material en segundos.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Pulmón de Ingreso y Pulmón de Egreso</span>
+                      <span className="text-slate-400 text-xs">Controlá lo que llega de fábrica en recepción antes de guardarlo, y prepará los pedidos con antelación en el área de expedición para que cuando llegue el flete la carga salga sin demoras.</span>
                     </div>
                   </div>
                 </div>
@@ -578,7 +588,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Preview Visual WMS Espacioso */}
+              {/* Preview Visual Depósito Espacioso */}
               <div className="lg:col-span-7 bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-2">
@@ -588,11 +598,11 @@ export default function LandingPage() {
                     <span className="text-xs font-mono text-slate-400 ml-2">inventrack.vertia.com/almacenes</span>
                   </div>
                   <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
-                    Tenant: Corralón Los Pinos
+                    Corralón Los Pinos · Depósito Central
                   </Badge>
                 </div>
 
-                {/* Matriz 2D simulada y métricas */}
+                {/* Métricas de Stock Dual */}
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
                     <div className="text-slate-400 text-[10px] font-semibold">Stock Físico Real</div>
@@ -602,49 +612,51 @@ export default function LandingPage() {
                   <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
                     <div className="text-slate-400 text-[10px] font-semibold">Stock Comprometido</div>
                     <div className="text-xl font-extrabold text-amber-400 mt-1">60 un</div>
-                    <div className="text-[10px] text-amber-500/80">Reservado en órdenes</div>
+                    <div className="text-[10px] text-amber-500/80">Vendido para obras</div>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
-                    <div className="text-slate-400 text-[10px] font-semibold">Stock Disponible</div>
+                    <div className="text-slate-400 text-[10px] font-semibold">Libre Mostrador / Red</div>
                     <div className="text-xl font-extrabold text-emerald-400 mt-1">60 un</div>
-                    <div className="text-[10px] text-emerald-500/80">Libre para venta</div>
+                    <div className="text-[10px] text-emerald-500/80">Disponible para vender</div>
                   </div>
                 </div>
 
+                {/* Pulmón de Egreso & Ubicaciones */}
                 <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-white flex items-center gap-1.5">
-                      <QrCode className="w-3.5 h-3.5 text-indigo-400" />
-                      Remito Oficial R-091 · Folio VT-1048
+                      <PackageCheck className="w-4 h-4 text-emerald-400" />
+                      Pulmón de Egreso · Carga Lista para Flete
                     </span>
-                    <span className="text-emerald-400 text-[11px] font-semibold">En Muelle de Expedición</span>
+                    <span className="text-emerald-400 text-[11px] font-semibold">Salida 08:30 hs</span>
+                  </div>
+                  <div className="text-[11px] text-slate-300">
+                    Ubicación en galpón: <span className="font-mono text-indigo-300">Pasillo A · Estantería 3 · Nivel 2</span>
                   </div>
                   <div className="text-[11px] text-slate-400">
-                    Chofer: Carlos Méndez • Camión: Mercedes Benz 710 • Patente: AF 892 XQ
+                    Chofer: Carlos Méndez • Camión Mercedes 710 • Remito oficial R-091 con QR impreso
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px]">
-                    <span className="text-slate-500 font-mono">P1-R02-E3-N2</span>
-                    <button className="bg-indigo-600 text-white font-bold px-3 py-1 rounded-lg">
-                      Imprimir Remito PDF A4
-                    </button>
+                    <span className="text-slate-500">Destino: Torre Norte (Bv. Oroño 1420)</span>
+                    <span className="text-indigo-400 font-semibold">Listo para cargar al camión</span>
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 3: OPERADOR VERTIA */}
+          {/* TAB 3: RED VERTIA - Coordinación, Resguardo y Profesionales */}
           {entornoActivo === "vertia" && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center animate-in fade-in duration-300">
               <div className="lg:col-span-5 space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 text-xs font-semibold">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Equipo Operativo & Dirección de VERTIA
+                  <ShieldCheck className="w-3.5 h-3.5" /> Garante de Confianza, Coordinación & Pagos
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-black text-white">
-                  Mesa de Operaciones Central: Red B2B, Licencias y Custodia
+                  Red Vertia: Coordinación de Pedidos, Resguardo de Pagos y Bolsa de Profesionales
                 </h3>
                 <p className="text-slate-300 text-sm leading-relaxed">
-                  La consola para los operadores de Vertia (Humberto y Federico). Monitorea el balance de stock de la red, habilita corralones, asigna órdenes por cercanía y audita evidencias fotográficas.
+                  El motor que conecta y facilita la operatoria a todos los integrantes de la red (clientes, corralones y profesionales), garantizando entregas a tiempo y resguardo financiero en cada operación.
                 </p>
 
                 <div className="space-y-3 pt-2">
@@ -653,8 +665,8 @@ export default function LandingPage() {
                       <Check className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <span className="font-bold text-white text-xs block">Gobierno Comercial de la Red</span>
-                      <span className="text-slate-400 text-xs">Habilita o inhabilita el acceso a InvenTrack para corralones clientes, otorga bonificaciones y gestiona planes.</span>
+                      <span className="font-bold text-white text-xs block">Coordinación Inteligente de Pedidos</span>
+                      <span className="text-slate-400 text-xs">Rutea cada requerimiento al corralón o proveedor más cercano que tenga stock real disponible, calculando fletes justos y tiempos de entrega reales.</span>
                     </div>
                   </div>
 
@@ -663,8 +675,8 @@ export default function LandingPage() {
                       <Check className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <span className="font-bold text-white text-xs block">Auditoría sin Injerencia Física</span>
-                      <span className="text-slate-400 text-xs">Visibilidad 360° en solo lectura del stock publicado, sin poder alterar estanterías ni stock de los corralones.</span>
+                      <span className="font-bold text-white text-xs block">Resguardo Seguro de Pagos (Garantía Escrow)</span>
+                      <span className="text-slate-400 text-xs">Cuando un contratista compra materiales o contrata servicios, el dinero queda resguardado por Vertia hasta que la obra confirma la entrega y conformidad. El proveedor cobra seguro, el cliente paga sobre seguro.</span>
                     </div>
                   </div>
 
@@ -673,68 +685,84 @@ export default function LandingPage() {
                       <Check className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <span className="font-bold text-white text-xs block">Contabilidad Simple (MRR)</span>
-                      <span className="text-slate-400 text-xs">Sumas de planes plenos, restas de bonificaciones por convenio y cobro neto recurrente.</span>
+                      <span className="font-bold text-white text-xs block">Bolsa de Trabajo & Profesionales Matriculados</span>
+                      <span className="text-slate-400 text-xs">Electricistas, plomeros, sanitaristas, techistas y gremios pueden darse de alta con su perfil y matrícula para ser contratados por constructoras con cobro 100% asegurado.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Respaldo Inter-Corralones (Sin Cuadrillas Paradas)</span>
+                      <span className="text-slate-400 text-xs">Si un corralón tiene un imprevisto con un flete o rotura de stock, la Red Vertia coordina con un corralón vecino para abastecer la obra sin demorar a los obreros.</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="pt-4 flex items-center gap-3">
-                  <Link href="/meta-admin">
+                  <Link href="/dashboard">
                     <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-lg shadow-indigo-600/30">
-                      Entrar a Consola Vertia <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                      Conocer la Red Vertia <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                     </Button>
                   </Link>
-                  <span className="text-[11px] text-slate-500">Exclusivo para la dirección</span>
+                  <span className="text-[11px] text-slate-500">Respaldo y garantías para toda la red</span>
                 </div>
               </div>
 
-              {/* Preview Visual Operador Espacioso */}
+              {/* Preview Visual Red Vertia Espacioso */}
               <div className="lg:col-span-7 bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-rose-500/70" />
                     <div className="w-3 h-3 rounded-full bg-amber-500/70" />
                     <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
-                    <span className="text-xs font-mono text-slate-400 ml-2">vertia.com/meta-admin</span>
+                    <span className="text-xs font-mono text-slate-400 ml-2">vertia.com/red</span>
                   </div>
                   <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-[10px]">
-                    Operadores: Humberto & Federico
+                    Garantía y Coordinación Red Vertia
                   </Badge>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
-                    <div className="text-slate-400 text-[11px] font-semibold">Empresas en la Red</div>
-                    <div className="text-2xl font-black text-white mt-1">4 Registradas</div>
-                    <div className="text-[10px] text-emerald-400 mt-0.5">3 Corralones • 1 Constructora</div>
+                    <div className="text-slate-400 text-[11px] font-semibold">Coordinación de Pedidos</div>
+                    <div className="text-lg font-bold text-white mt-1">100% con flete asignado</div>
+                    <div className="text-[10px] text-emerald-400 mt-0.5">Ruteo por cercanía y stock real</div>
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
-                    <div className="text-slate-400 text-[11px] font-semibold">Cobranza Recurrente (MRR)</div>
-                    <div className="text-2xl font-black text-emerald-400 mt-1">$406.20 USD</div>
-                    <div className="text-[10px] text-slate-500 mt-0.5">Base $517 - Bonificaciones $110.80</div>
+                    <div className="text-slate-400 text-[11px] font-semibold">Resguardo de Pagos (Escrow)</div>
+                    <div className="text-lg font-bold text-emerald-400 mt-1">Custodia Activa</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">Liberación contra remito firmado</div>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+                {/* Tarjeta de Coordinación de Pedido y Oficio */}
+                <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-white">Corralón Los Pinos S.R.L.</span>
+                    <span className="font-bold text-white flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                      Asignación de Obra · Pedido #VT-1049
+                    </span>
                     <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
-                      InvenTrack Habilitado
+                      Pago en Resguardo
                     </Badge>
                   </div>
-                  <div className="text-[11px] text-slate-400 flex items-center justify-between">
-                    <span>Plan Mono-Almacén • Al día</span>
-                    <span className="text-amber-400 font-semibold">Sin Bonificación (Tarifa Plena $49 USD)</span>
+                  <div className="text-[11px] text-slate-300 grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-500 block">Proveedor Asignado:</span>
+                      Corralón Los Pinos (a 4.2 km de obra)
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Profesional Vinculado:</span>
+                      Roberto Varela (Electricista Matriculado)
+                    </div>
                   </div>
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-                    <button className="bg-slate-800 text-slate-300 text-[11px] px-3 py-1 rounded-lg">
-                      Otorgar Bonificación
-                    </button>
-                    <button className="bg-rose-500/20 text-rose-400 text-[11px] px-3 py-1 rounded-lg">
-                      Inhabilitar WMS
-                    </button>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px]">
+                    <span className="text-amber-400 font-semibold">$285.000 en custodia garantizada</span>
+                    <span className="text-slate-400">Entrega programada 08:30 hs</span>
                   </div>
                 </div>
               </div>
@@ -923,9 +951,9 @@ export default function LandingPage() {
             </div>
           </Link>
 
-          {/* Card 3: Vertia */}
+          {/* Card 3: Profesionales & Red Vertia */}
           <Link
-            href="/meta-admin"
+            href="/cliente"
             className="group rounded-3xl border border-indigo-500/20 bg-slate-900/60 p-8 flex flex-col justify-between hover:bg-slate-900 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all"
           >
             <div>
@@ -933,17 +961,17 @@ export default function LandingPage() {
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/30 text-[10px] mb-2">
-                Rol: Operador de Plataforma
+                Bolsa de Profesionales & Red
               </Badge>
               <h3 className="text-xl font-bold text-white group-hover:text-indigo-300 transition-colors">
-                Entorno VERTIA
+                Red Vertia & Profesionales
               </h3>
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                Consola del Meta-Administrador. Asigná pedidos entre empresas de la red, habilitá módulos WMS, gestioná bonificaciones comerciales y cobros.
+                Bolsa de trabajo para electricistas, sanitaristas y gremios con matrícula. Pedidos coordinados entre corralones y custodia de pagos garantizada.
               </p>
             </div>
             <div className="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-indigo-400">
-              <span>Ingresar a Consola Vertia</span>
+              <span>Conocer la Red & Gremios</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
@@ -959,7 +987,7 @@ export default function LandingPage() {
             </div>
             <div>
               <span className="font-bold text-slate-300 block">VERTIA / InvenTrack v2</span>
-              <span className="text-[11px] text-slate-500">Plataforma B2B para Construcciones, Corralones y Oficios</span>
+              <span className="text-[11px] text-slate-500">Plataforma Integral para Construcciones, Corralones y Profesionales</span>
             </div>
           </div>
 
