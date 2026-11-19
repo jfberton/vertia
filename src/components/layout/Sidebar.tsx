@@ -83,26 +83,10 @@ export function Sidebar() {
       icon: LayoutDashboard,
     },
     {
-      label: "Solicitudes & Pedidos",
-      href: "/ordenes",
-      icon: ClipboardList,
-      badge: "VT-1048",
-    },
-    {
-      label: "Materiales & Stock Global",
-      href: "/productos",
-      icon: Boxes,
-    },
-    {
-      label: "Almacenes de la Red",
-      href: "/almacenes",
-      icon: Warehouse,
-    },
-    {
-      label: "Validación de Evidencias",
-      href: "/evidencias",
-      icon: Camera,
-      badge: "Fotos",
+      label: "Empresas & Clientes de Red",
+      href: "/meta-admin",
+      icon: Building2,
+      badge: "Core",
     },
     {
       label: "Red Colaborativa B2B",
@@ -111,10 +95,21 @@ export function Sidebar() {
       badge: "Red",
     },
     {
-      label: "Admin. de Plataforma",
-      href: "/meta-admin",
-      icon: CreditCard,
-      badge: "Core",
+      label: "Solicitudes & Pedidos",
+      href: "/ordenes",
+      icon: ClipboardList,
+      badge: "VT-1048",
+    },
+    {
+      label: "Catálogo Red B2B (Auditoría)",
+      href: "/productos",
+      icon: Boxes,
+    },
+    {
+      label: "Validación de Evidencias",
+      href: "/evidencias",
+      icon: Camera,
+      badge: "Fotos",
     },
     {
       label: "Usuarios & Permisos",

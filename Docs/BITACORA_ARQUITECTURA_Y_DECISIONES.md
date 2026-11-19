@@ -58,6 +58,34 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 
 ## 📝 4. Registro Cronológico de Decisiones y Cambios
 
+### [2026-11-18] - Separación Arquitectónica: Vertia (Operador de Red) vs InvenTrack (Manejo Interno del Corralón)
+- **Autor / Agente:** Lead Architect (Antigravity).
+- **Directriz de Negocio:**
+  - El administrador de Vertia no administra el manejo interno de los corralones (sus galpones, racks ni movimientos físicos son privativos del corralón a través de InvenTrack).
+  - Los administradores de Vertia ven a los corralones como **clientes / proveedores de materiales de la red**.
+  - Facultades del Administrador de Vertia sobre las empresas:
+    1. **Habilitar o inhabilitar** a la empresa para que opere con el aplicativo InvenTrack (`habilitado_inventrack`).
+    2. **Otorgar bonificaciones comerciales** (porcentajes de descuento y registro del motivo comercial: convenios con cámaras, bonificación de prueba, promociones por volumen).
+    3. **Anular o reactivar suscripciones** a la red Vertia.
+    4. **Control contable simple** (suma de tarifas base, resta de bonificaciones otorgadas y cálculo neto a cobrar MRR).
+- **Implementación Arquitectónica:**
+  1. **Navegación (`Sidebar.tsx`):**
+     - Se eliminó completamente la ruta de galpones internos (`/almacenes`) del menú del Super Administrador.
+     - Se jerarquizó el acceso a **"Empresas & Clientes de Red"** (`/meta-admin`) en la consola del operador de Vertia.
+     - Se etiquetó el catálogo como **"Catálogo Red B2B (Auditoría)"** (`/productos`).
+  2. **Portal de Meta-Administrador (`src/app/(dashboard)/meta-admin/page.tsx`):**
+     - Tabla organizada con identificación clara: Proveedor de Materiales (Corralón) vs Cliente Comprador (Obras).
+     - Estado de operatividad InvenTrack con switch directo para inhabilitar o habilitar el aplicativo WMS.
+     - Modal para otorgar bonificaciones comerciales con cálculo de impacto contable en vivo y registro de motivo comercial.
+     - Botón de anulación definitiva de suscripción a la red.
+     - Panel de economía con desglose contable simple (Suma facturación plena - Resta bonificaciones = Facturación neta a cobrar).
+  3. **Guardián RBAC (`DashboardAuthGuard.tsx`):**
+     - Si un Super Admin intenta navegar manualmente a `/almacenes`, es redirigido a `/meta-admin` con aviso informativo.
+     - Si un corralón es inhabilitado por Vertia (`habilitado_inventrack === false`), el guardián bloquea de inmediato su acceso a `/productos` y `/almacenes`.
+- **Control de Calidad:**
+  - Pruebas automatizadas: **90 / 90 tests pasando al 100% (0 fallos)**.
+  - Compilación `npm run build` con Turbopack exitosa en las 13 rutas estáticas.
+
 ### [2026-11-18] - Modo Solo Lectura / Auditoría para Administradores de Vertia en Módulos de Corralón (InvenTrack)
 - **Autor / Agente:** Lead Architect (Antigravity).
 - **Requerimiento del Negocio (Humberto / Vertia):**

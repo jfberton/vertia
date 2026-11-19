@@ -62,7 +62,27 @@ export function DashboardAuthGuard({ children }: DashboardAuthGuardProps) {
       };
     }
 
-    // 3. InvenTrack (Almacenes y Productos): Bloqueado para Clientes de Obra
+    // 3. Almacenes (Galpón físico WMS): Exclusivo para usuarios operativos de Corralón (InvenTrack)
+    if (pathname.startsWith("/almacenes") && isSuperAdmin) {
+      return {
+        status: "forbidden" as const,
+        reason: "El manejo interno de galpones y celdas es exclusivo de cada corralón en InvenTrack. La gestión de la red se realiza desde Empresas & Clientes de Red.",
+        redirectTo: "/meta-admin",
+      };
+    }
+
+    // 4. InvenTrack inhabilitado por la administración de Vertia
+    if (!isSuperAdmin && !isCliente && tenant && tenant.habilitado_inventrack === false) {
+      if (pathname.startsWith("/almacenes") || pathname.startsWith("/productos")) {
+        return {
+          status: "forbidden" as const,
+          reason: "Tu empresa ha sido inhabilitada para operar con el aplicativo InvenTrack. Por favor comunícate con la administración de Vertia para regularizar la suscripción.",
+          redirectTo: "/login",
+        };
+      }
+    }
+
+    // 5. InvenTrack (Almacenes y Productos): Bloqueado para Clientes de Obra
     if ((pathname.startsWith("/almacenes") || pathname.startsWith("/productos")) && isCliente) {
       return {
         status: "forbidden" as const,
