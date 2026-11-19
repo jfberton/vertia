@@ -58,6 +58,31 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 
 ## 📝 4. Registro Cronológico de Decisiones y Cambios
 
+### [2026-11-19] - Rediseño Integral de la Landing Page: Dolores de la Industria, 3 Entornos Interactivos y Stepper de Flujo
+- **Autor / Agente:** Lead Architect (Antigravity).
+- **Problema de UX Detectado:**
+  - Las tarjetas de los tres entornos mostraban maquetas de UI dobles excesivamente compactas, apiñadas e ilegibles en columnas estrechas de 320px.
+  - La propuesta de valor carecía de un bloque previo que expusiera claramente los dolores y el desorden analógico que la plataforma resuelve.
+- **Solución y Mejoras Implementadas:**
+  1. **Sección Superior de Dolores y Diagnóstico de la Industria (`#problema`):**
+     - 4 tarjetas destacadas con alertas cromáticas:
+       1. *Caos por WhatsApp & Audios Perdidos* (pedidos informales sin trazabilidad).
+       2. *Stock Fantasma & Sobreventas* (corralones vendiendo mercadería ya comprometida).
+       3. *Pagos a Ciegas & Riesgo de Cobro* (desconfianza financiera entre constructora y corralón).
+       4. *Remitos de Papel Extraviados* (falta de evidencias de entrega en destino).
+     - Banner de contraste: *"Del caos analógico a la sincronización digital con custodia de fondos"*.
+  2. **Los 3 Entornos en Formato Showcase Espacioso con Animación (`#entornos`):**
+     - Se reemplazaron las tarjetas apiñadas por un **Selector Interactivo de Entornos** (Tabs animadas: *App del Cliente*, *App del Corralón / InvenTrack* y *App de VERTIA*).
+     - Exhibición con diseño estilo estudio (tipo Vercel/Linear), tipografía legible, badges de rol y paneles visuales amplios con métricas reales.
+  3. **Stepper Dinámico del Flujo de una Solicitud (`#flujo`):**
+     - 6 pasos interactivos conectados (desde la creación del requerimiento por el cliente, ruteo por Vertia, aprobación y custodia Escrow, picking en galpón WMS con remito oficial R-091 con QR, entrega con foto comprimida WebP, hasta la conformidad y liberación de fondos).
+     - Al seleccionar cada paso, se actualiza en vivo el detalle explicativo, la evidencia requerida y el estado en el sistema.
+  4. **Acceso Rápido y Simulador 1-Click (`#acceso`):**
+     - 3 tarjetas de acceso directo por rol para probar en caliente cada entorno.
+- **Control de Calidad:**
+  - Suite automatizada: **103 / 103 pruebas superadas al 100% (0 fallos)**.
+  - Compilación de producción con Turbopack: **14 / 14 rutas estáticas generadas limpiamente**.
+
 ### [2026-11-18] - Separación Arquitectónica: Vertia (Operador de Red) vs InvenTrack (Manejo Interno del Corralón)
 - **Autor / Agente:** Lead Architect (Antigravity).
 - **Directriz de Negocio:**
