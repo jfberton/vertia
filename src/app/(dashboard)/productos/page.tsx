@@ -670,14 +670,15 @@ export default function ProductosPage() {
                       {/* Material / SKU / Rubro */}
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-slate-900 text-xs">{p.nombre}</div>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-                          <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-semibold">
-                            {p.sku || p.codigo_barras}
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-1">
+                          <span className="font-mono bg-slate-100 border border-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold inline-flex items-center gap-1">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">SKU:</span>
+                            <span>{p.sku || p.codigo_barras}</span>
                           </span>
                           <span>•</span>
-                          <span>{p.categoria}</span>
+                          <span className="text-slate-500">{p.categoria}</span>
                           <span>•</span>
-                          <span className="font-semibold text-slate-600">{p.unidad_medida}</span>
+                          <span className="font-semibold text-slate-700">{p.unidad_medida}</span>
                         </div>
                       </td>
 
@@ -904,58 +905,61 @@ export default function ProductosPage() {
                   <span className="font-bold text-slate-900 text-sm">Esquema de Precios y Listas</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
-                      1. Precio Regular Mostrador ($ MXN)
+                    <label className="font-semibold text-slate-700 block text-xs h-7 flex items-end pb-1">
+                      1. Precio Regular Mostrador
                     </label>
-                    <div className="relative">
-                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">$</span>
+                    <div className="relative h-9">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs">$</span>
                       <Input
                         type="number"
                         step="0.5"
                         disabled={!isAdminGalpon}
                         value={formPrecioMostrador}
                         onChange={(e) => handleCambioPrecioMostrador(Number(e.target.value) || 0)}
-                        className="pl-6 h-8 text-xs font-black text-slate-900 bg-white"
+                        className="pl-6 pr-12 h-9 text-xs font-black text-slate-900 bg-white border-slate-200"
                       />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">MXN</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="font-semibold text-slate-700 block text-xs h-7 flex items-end pb-1">
                       2. Lista Asignada para Red
                     </label>
-                    <select
-                      disabled={!isAdminGalpon}
-                      value={formListaActiva}
-                      onChange={(e) => {
-                        const lista = e.target.value as TipoListaPrecio;
-                        setFormListaActiva(lista);
-                        if (lista === "mostrador") {
-                          setFormBonificacion(0);
-                          setFormPrecioRed(formPrecioMostrador);
-                        } else if (lista === "contratista") {
-                          setFormBonificacion(4.0);
-                          setFormPrecioRed(Math.round(formPrecioMostrador * 0.96 * 100) / 100);
-                        } else {
-                          setFormBonificacion(5.0);
-                          setFormPrecioRed(Math.round(formPrecioMostrador * 0.95 * 100) / 100);
-                        }
-                      }}
-                      className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-xs font-semibold text-slate-800 disabled:bg-slate-100"
-                    >
-                      <option value="red_vertia">Lista Red VERTIA (Precio preferencial Escrow)</option>
-                      <option value="contratista">Lista Contratistas & Obra (~4%)</option>
-                      <option value="mostrador">Lista Mostrador Base (0%)</option>
-                    </select>
+                    <div className="h-9">
+                      <select
+                        disabled={!isAdminGalpon}
+                        value={formListaActiva}
+                        onChange={(e) => {
+                          const lista = e.target.value as TipoListaPrecio;
+                          setFormListaActiva(lista);
+                          if (lista === "mostrador") {
+                            setFormBonificacion(0);
+                            setFormPrecioRed(formPrecioMostrador);
+                          } else if (lista === "contratista") {
+                            setFormBonificacion(4.0);
+                            setFormPrecioRed(Math.round(formPrecioMostrador * 0.96 * 100) / 100);
+                          } else {
+                            setFormBonificacion(5.0);
+                            setFormPrecioRed(Math.round(formPrecioMostrador * 0.95 * 100) / 100);
+                          }
+                        }}
+                        className="w-full h-9 bg-white border border-slate-200 rounded-lg px-2 text-xs font-semibold text-slate-800 disabled:bg-slate-100 focus:ring-1 focus:ring-indigo-500"
+                      >
+                        <option value="red_vertia">Red VERTIA (Escrow)</option>
+                        <option value="contratista">Contratistas (~4%)</option>
+                        <option value="mostrador">Mostrador Base (0%)</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
-                      3. Bonificación / Descuento Red (%)
+                    <label className="font-semibold text-slate-700 block text-xs h-7 flex items-end pb-1">
+                      3. Bonificación a la Red
                     </label>
-                    <div className="flex items-center gap-1">
+                    <div className="relative h-9">
                       <Input
                         type="number"
                         step="0.1"
@@ -964,9 +968,9 @@ export default function ProductosPage() {
                         disabled={!isAdminGalpon}
                         value={formBonificacion}
                         onChange={(e) => handleCambioBonificacion(Number(e.target.value) || 0)}
-                        className="h-8 text-xs font-bold text-right pr-2 bg-white"
+                        className="pr-7 pl-3 h-9 text-xs font-bold text-slate-900 bg-white border-slate-200 text-right"
                       />
-                      <span className="font-bold text-slate-600">%</span>
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs">%</span>
                     </div>
                   </div>
                 </div>
@@ -1003,46 +1007,50 @@ export default function ProductosPage() {
                   <span className="font-bold text-slate-900 text-sm">Control de Stock & Alertas</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="font-semibold text-slate-700 block text-xs h-7 flex items-end pb-1">
                       Stock Físico Real en Bodega
                     </label>
-                    <div className="flex items-center gap-1.5">
+                    <div className="relative h-9">
                       <Input
                         type="number"
                         disabled={!isAdminGalpon}
                         value={formStockReal}
                         onChange={(e) => setFormStockReal(Number(e.target.value) || 0)}
-                        className="h-8 text-xs font-black text-slate-900 bg-white"
+                        className="pr-10 pl-3 h-9 text-xs font-black text-slate-900 bg-white border-slate-200"
                       />
-                      <span className="font-bold text-slate-500 uppercase">{formUnidad}</span>
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-[10px] uppercase">
+                        {formUnidad}
+                      </span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="font-semibold text-slate-700 block text-xs h-7 flex items-end pb-1">
                       Stock Comprometido (Órdenes)
                     </label>
-                    <div className="flex items-center gap-1.5 h-8 px-2.5 bg-amber-50 rounded border border-amber-200 text-amber-900 font-bold">
+                    <div className="relative h-9 flex items-center justify-between px-3 bg-amber-50 rounded-lg border border-amber-200 text-amber-900 font-bold text-xs">
                       <span>{prodSeleccionado.stock_comprometido}</span>
-                      <span className="text-[10px] uppercase">{formUnidad}</span>
+                      <span className="text-[10px] text-amber-700/80 uppercase">{formUnidad}</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="font-semibold text-slate-700 block text-xs h-7 flex items-end pb-1">
                       Alerta Stock Mínimo (Reposición)
                     </label>
-                    <div className="flex items-center gap-1.5">
+                    <div className="relative h-9">
                       <Input
                         type="number"
                         disabled={!isAdminGalpon}
                         value={formStockMinimo}
                         onChange={(e) => setFormStockMinimo(Number(e.target.value) || 0)}
-                        className="h-8 text-xs font-bold text-slate-900 bg-white"
+                        className="pr-10 pl-3 h-9 text-xs font-bold text-slate-900 bg-white border-slate-200"
                       />
-                      <span className="font-bold text-slate-500 uppercase">{formUnidad}</span>
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-[10px] uppercase">
+                        {formUnidad}
+                      </span>
                     </div>
                   </div>
                 </div>
