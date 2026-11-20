@@ -21,12 +21,14 @@ interface WarehouseReceptionCardProps {
   receptionItems: RecepcionItem[];
   onOpenSlottingModal: (item?: RecepcionItem) => void;
   warehouseName: string;
+  onOpenNuevoIngresoModal?: () => void;
 }
 
 export function WarehouseReceptionCard({
   receptionItems,
   onOpenSlottingModal,
   warehouseName,
+  onOpenNuevoIngresoModal,
 }: WarehouseReceptionCardProps) {
   const pendingItems = receptionItems.filter((i) => i.cantidad_pendiente > 0);
   const totalBultosPendientes = pendingItems.reduce((acc, curr) => acc + curr.cantidad_pendiente, 0);
@@ -60,7 +62,17 @@ export function WarehouseReceptionCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
+            {onOpenNuevoIngresoModal && (
+              <Button
+                onClick={onOpenNuevoIngresoModal}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 px-3.5 shadow-sm transition-all"
+              >
+                <Truck className="w-4 h-4 mr-1.5" />
+                + Recibir Mercadería (Descarga)
+              </Button>
+            )}
+
             <Button
               onClick={() => onOpenSlottingModal()}
               disabled={pendingItems.length === 0}

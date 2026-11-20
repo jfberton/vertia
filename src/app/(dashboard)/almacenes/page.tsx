@@ -24,6 +24,7 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   LayoutGrid,
+  X,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,8 @@ import {
 import {
   getStoredEmbarques,
   updateStoredEmbarque,
+  getAllStoredProductos,
+  updateStoredProducto,
 } from "@/lib/services/mock-store";
 import { WarehouseReceptionCard } from "@/components/warehouses/WarehouseReceptionCard";
 import { WarehouseEmbarqueCard } from "@/components/warehouses/WarehouseEmbarqueCard";
@@ -176,6 +179,59 @@ export default function AlmacenesPage() {
   // ==========================================
   const [receptionItems, setReceptionItems] = useState<RecepcionItem[]>(MOCK_RECEPCION_ITEMS);
 
+  // Modal para registrar nuevo ingreso de mercadería al Pulmón de Entrada
+  const [modalNuevoIngresoOpen, setModalNuevoIngresoOpen] = useState(false);
+  const [ingresoProveedor, setIngresoProveedor] = useState("Cooperativa La Cruz Azul S.C.L.");
+  const [ingresoRemito, setIngresoRemito] = useState("");
+  const [ingresoMaterialNombre, setIngresoMaterialNombre] = useState("Cemento Cruz Azul Gris 50kg (Bolsa)");
+  const [ingresoSku, setIngresoSku] = useState("CEM-CAZ-50");
+  const [ingresoCategoria, setIngresoCategoria] = useState("Cementos y Adhesivos");
+  const [ingresoCantidad, setIngresoCantidad] = useState("50");
+  const [ingresoUnidad, setIngresoUnidad] = useState("Bolsas");
+  const [ingresoLote, setIngresoLote] = useState("");
+  const [ingresoPesoKg, setIngresoPesoKg] = useState("2500");
+  const [ingresoMuelle, setIngresoMuelle] = useState("Muelle 1 - Descarga Pesada");
+  const [ingresoPrioridad, setIngresoPrioridad] = useState<"normal" | "alta" | "critica">("normal");
+  const [ingresoSugerenciaPasillo, setIngresoSugerenciaPasillo] = useState("Pasillo 1 - Obra Gruesa & Cementos");
+
+  const handleRegistrarIngresoPulmon = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!almacenSeleccionado) return;
+    const qty = Number(ingresoCantidad) || 1;
+    const folio = ingresoRemito || `REM-PROV-${Math.floor(1000 + Math.random() * 9000)}`;
+    const loteFinal = ingresoLote || `LOTE-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+
+    const newItem: RecepcionItem = {
+      id: `rec-item-${Date.now()}`,
+      almacen_id: almacenSeleccionado.id,
+      tenant_id: almacenSeleccionado.tenant_id,
+      remito_numero: folio,
+      proveedor: ingresoProveedor || "Proveedor de Materiales",
+      producto_nombre: ingresoMaterialNombre,
+      sku: ingresoSku || "SKU-GEN",
+      categoria: ingresoCategoria,
+      cantidad_total: qty,
+      cantidad_pendiente: qty,
+      unidad: ingresoUnidad,
+      lote: loteFinal,
+      peso_total_kg: Number(ingresoPesoKg) || qty * 50,
+      fecha_hora_arribo: "Recién descargado",
+      muelle_descarga: ingresoMuelle,
+      estado: "pendiente",
+      prioridad: ingresoPrioridad,
+      sugerencia_pasillo: ingresoSugerenciaPasillo,
+    };
+
+    setReceptionItems((prev) => [newItem, ...prev]);
+    showNotification(
+      `¡Descarga registrada en el Pulmón de Entrada! ${qty} ${ingresoUnidad} de "${ingresoMaterialNombre}" listos para estiba/slotting en ${almacenSeleccionado.nombre}.`,
+      "success"
+    );
+    setModalNuevoIngresoOpen(false);
+    setIngresoRemito("");
+    setIngresoLote("");
+  };
+
   const currentReceptionItems = useMemo(() => {
     if (!almacenSeleccionado) return [];
     return receptionItems.filter(
@@ -297,7 +353,25 @@ export default function AlmacenesPage() {
     // 4. Seleccionar la celda actualizada
     setSelectedCellId(cellId);
 
-    // 5. Notificación
+    // 5. Actualizar existencia en el catálogo si coincide con un producto registrado
+    try {
+      const allStored = getAllStoredProductos();
+      const matchProd = allStored.find(
+        (p) =>
+          (item.sku && p.sku === item.sku) ||
+          p.nombre.toLowerCase().includes(item.producto_nombre.toLowerCase()) ||
+          item.producto_nombre.toLowerCase().includes(p.nombre.toLowerCase())
+      );
+      if (matchProd) {
+        updateStoredProducto(matchProd.id, {
+          stock_real: matchProd.stock_real + quantity,
+        });
+      }
+    } catch (e) {
+      console.warn("No se pudo sincronizar producto con catálogo:", e);
+    }
+
+    // 6. Notificación
     const destCell = currentWarehouseCells.find((c) => c.id === cellId);
     showNotification(
       `¡Stock alojado con éxito! Se acomodaron ${quantity} unidades de "${item.producto_nombre}" en ${
@@ -719,6 +793,7 @@ export default function AlmacenesPage() {
                 receptionItems={currentReceptionItems}
                 onOpenSlottingModal={(item) => handleOpenSlottingModal(item)}
                 warehouseName={almacenSeleccionado.nombre}
+                onOpenNuevoIngresoModal={() => setModalNuevoIngresoOpen(true)}
               />
             </div>
           )}
@@ -898,6 +973,181 @@ export default function AlmacenesPage() {
                 </Button>
                 <Button type="submit" className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold">
                   Crear Almacén
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL: REGISTRAR INGRESO DE MERCADERÍA / DESCARGA A PULMÓN */}
+      {/* ======================================================== */}
+      {modalNuevoIngresoOpen && almacenSeleccionado && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">Recibir Mercadería de Proveedor</h3>
+                  <p className="text-[11px] text-slate-400">
+                    Descarga física e ingreso de albarán al Pulmón de Entrada en {almacenSeleccionado.nombre}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setModalNuevoIngresoOpen(false)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleRegistrarIngresoPulmon} className="p-5 space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Proveedor / Remitente *</label>
+                  <Input
+                    required
+                    value={ingresoProveedor}
+                    onChange={(e) => setIngresoProveedor(e.target.value)}
+                    placeholder="ej: Cooperativa La Cruz Azul"
+                    className="h-8 text-xs font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Folio Remisión / Albarán</label>
+                  <Input
+                    value={ingresoRemito}
+                    onChange={(e) => setIngresoRemito(e.target.value)}
+                    placeholder="ej: REM-CAZ-9081"
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Material Recibido *</label>
+                <Input
+                  required
+                  value={ingresoMaterialNombre}
+                  onChange={(e) => setIngresoMaterialNombre(e.target.value)}
+                  placeholder="ej: Cemento Cruz Azul Gris 50kg (Bolsa)"
+                  className="h-8 text-xs font-bold text-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">SKU / Clave</label>
+                  <Input
+                    value={ingresoSku}
+                    onChange={(e) => setIngresoSku(e.target.value)}
+                    placeholder="CEM-CAZ-50"
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Cantidad *</label>
+                  <Input
+                    required
+                    type="number"
+                    min="1"
+                    value={ingresoCantidad}
+                    onChange={(e) => setIngresoCantidad(e.target.value)}
+                    className="h-8 text-xs font-black text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Unidad</label>
+                  <select
+                    value={ingresoUnidad}
+                    onChange={(e) => setIngresoUnidad(e.target.value)}
+                    className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-xs font-semibold"
+                  >
+                    <option value="Bolsas">Bolsas (BL)</option>
+                    <option value="Piezas">Piezas (PZA)</option>
+                    <option value="Metros cúbicos">M3</option>
+                    <option value="Millares">Millar</option>
+                    <option value="Rollos">Rollos</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-100">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Número de Lote</label>
+                  <Input
+                    value={ingresoLote}
+                    onChange={(e) => setIngresoLote(e.target.value)}
+                    placeholder="ej: LOTE-2026-X8"
+                    className="h-8 text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Peso Total Estimado (kg)</label>
+                  <Input
+                    type="number"
+                    value={ingresoPesoKg}
+                    onChange={(e) => setIngresoPesoKg(e.target.value)}
+                    className="h-8 text-xs font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Muelle de Descarga</label>
+                  <select
+                    value={ingresoMuelle}
+                    onChange={(e) => setIngresoMuelle(e.target.value)}
+                    className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-xs font-semibold"
+                  >
+                    <option value="Muelle 1 - Descarga Pesada">Muelle 1 - Descarga Pesada</option>
+                    <option value="Muelle 2 - Furgón Ligero">Muelle 2 - Furgón Ligero</option>
+                    <option value="Patio Metales - Grúa Móvil">Patio Metales - Grúa</option>
+                    <option value="Bahía Tolvas Áridos">Bahía Tolvas Áridos</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Prioridad de Estiba</label>
+                  <select
+                    value={ingresoPrioridad}
+                    onChange={(e) => setIngresoPrioridad(e.target.value as "normal" | "alta" | "critica")}
+                    className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-xs font-semibold"
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="alta">Alta (Prioridad)</option>
+                    <option value="critica">Crítica (Urgente)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px] flex items-center gap-2">
+                <Truck className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>
+                  Al confirmar la recepción, la mercadería ingresará al <strong>Pulmón de Entrada</strong> para su posterior estiba guiada (slotting 2D) en los racks de la bodega.
+                </span>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setModalNuevoIngresoOpen(false)}
+                  className="h-8 text-xs"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs"
+                >
+                  <Check className="w-3.5 h-3.5 mr-1.5" />
+                  Confirmar Descarga a Pulmón
                 </Button>
               </div>
             </form>

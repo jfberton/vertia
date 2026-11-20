@@ -36,6 +36,8 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   ShieldAlert,
+  Truck,
+  FileText,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -116,6 +118,70 @@ export default function ProductosPage() {
   const [formStockMinimo, setFormStockMinimo] = useState<number>(20);
   const [formModoCupo, setFormModoCupo] = useState<"automatico" | "cupo_manual">("automatico");
   const [formCupoManual, setFormCupoManual] = useState<number>(0);
+
+  // ========================================================
+  // MODAL: RECIBIR MERCADERÍA / INGRESO DE PROVEEDOR
+  // ========================================================
+  const [modalRecibirAbierto, setModalRecibirAbierto] = useState(false);
+  const [recibirProdId, setRecibirProdId] = useState("");
+  const [recibirCantidad, setRecibirCantidad] = useState("100");
+  const [recibirProveedor, setRecibirProveedor] = useState("Cooperativa La Cruz Azul S.C.L.");
+  const [recibirRemito, setRecibirRemito] = useState("");
+  const [recibirLote, setRecibirLote] = useState("");
+  const [recibirDestino, setRecibirDestino] = useState<"pulmon" | "directo">("pulmon");
+
+  const abrirModalRecibir = (prod?: MultiTenantProducto) => {
+    const target = prod || productos[0];
+    if (target) {
+      setRecibirProdId(target.id);
+      setRecibirProveedor(
+        target.nombre.includes("Cruz Azul")
+          ? "Cooperativa La Cruz Azul S.C.L."
+          : target.nombre.includes("Cal")
+          ? "Grupo Calidra S.A. de C.V."
+          : target.nombre.includes("Varilla")
+          ? "Deacero S.A.P.I. de C.V."
+          : "Proveedor de Materiales"
+      );
+    }
+    setRecibirRemito(`REM-PROV-${Math.floor(1000 + Math.random() * 9000)}`);
+    setRecibirLote(`LOTE-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`);
+    setModalRecibirAbierto(true);
+  };
+
+  const handleConfirmarRecepcion = (e: React.FormEvent) => {
+    e.preventDefault();
+    const prod = productos.find((p) => p.id === recibirProdId);
+    if (!prod) return;
+    const qty = Number(recibirCantidad) || 1;
+
+    if (recibirDestino === "directo") {
+      const nuevoStock = prod.stock_real + qty;
+      const nuevoDisp = Math.max(0, nuevoStock - prod.stock_comprometido);
+      updateStoredProducto(prod.id, {
+        stock_real: nuevoStock,
+        stock_disponible: nuevoDisp,
+      });
+      setProductos((prev) =>
+        prev.map((p) =>
+          p.id === prod.id
+            ? { ...p, stock_real: nuevoStock, stock_disponible: nuevoDisp }
+            : p
+        )
+      );
+      showNotification(
+        `¡Ingreso directo registrado! Se sumaron ${qty} ${prod.unidad_medida} al stock físico de "${prod.nombre}".`
+      );
+    } else {
+      showNotification(
+        `¡Mercadería ingresada al Pulmón de Recepción! Se registraron ${qty} ${prod.unidad_medida} de "${prod.nombre}" listos para estiba guiada (slotting 2D).`
+      );
+    }
+
+    setModalRecibirAbierto(false);
+    setRecibirRemito("");
+    setRecibirLote("");
+  };
 
   const abrirAdministrarMaterial = (prod: MultiTenantProducto) => {
     setProdSeleccionado(prod);
@@ -447,6 +513,14 @@ export default function ProductosPage() {
               >
                 <Tag className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
                 Listas & Bonificaciones
+              </Button>
+
+              <Button
+                onClick={() => abrirModalRecibir()}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs"
+              >
+                <Truck className="w-4 h-4 mr-1.5" />
+                Recibir Mercadería
               </Button>
 
               <Button
@@ -1054,6 +1128,28 @@ export default function ProductosPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Acción rápida: Recibir descarga de este material */}
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/60 p-2.5 rounded-lg">
+                  <div className="text-[11px] text-slate-600">
+                    <span className="font-semibold text-slate-800">¿Llegó un camión con este material a bodega?</span>
+                    <p className="text-[10px] text-slate-500">Registra la remisión del proveedor en el pulmón de recepción o a stock físico.</p>
+                  </div>
+                  {isAdminGalpon && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => {
+                        setModalAdminAbierto(false);
+                        abrirModalRecibir(prodSeleccionado);
+                      }}
+                      className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shrink-0 shadow-2xs"
+                    >
+                      <Truck className="w-3.5 h-3.5 mr-1.5" />
+                      + Recibir Entrega de este Material
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* BLOQUE 4: DISTRIBUCIÓN EN EL ALMACÉN (WMS MULTI-UBICACIÓN) */}
@@ -1459,6 +1555,198 @@ export default function ProductosPage() {
                 >
                   <Save className="w-3.5 h-3.5 mr-1.5" />
                   Registrar Material
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+      {/* ======================================================== */}
+      {/* 8. MODAL: RECIBIR MERCADERÍA / DESCARGA DE PROVEEDOR     */}
+      {/* ======================================================== */}
+      {modalRecibirAbierto && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="w-full max-w-xl bg-white rounded-2xl p-6 shadow-2xl border-slate-200 animate-in fade-in-50 zoom-in-95 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">
+                    Recepción de Mercadería & Descarga
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Registra la llegada de material por camión de proveedor con remisión oficial.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setModalRecibirAbierto(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmarRecepcion} className="space-y-4 text-xs">
+              {/* Selector de Material */}
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Material a Recibir *
+                </label>
+                <select
+                  value={recibirProdId}
+                  onChange={(e) => {
+                    setRecibirProdId(e.target.value);
+                    const sel = productos.find((p) => p.id === e.target.value);
+                    if (sel) {
+                      setRecibirProveedor(
+                        sel.nombre.includes("Cruz Azul")
+                          ? "Cooperativa La Cruz Azul S.C.L."
+                          : sel.nombre.includes("Cal")
+                          ? "Grupo Calidra S.A. de C.V."
+                          : sel.nombre.includes("Varilla")
+                          ? "Deacero S.A.P.I. de C.V."
+                          : "Proveedor de Materiales"
+                      );
+                    }
+                  }}
+                  className="w-full h-9 bg-white border border-slate-200 rounded-lg px-2.5 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {productos.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre} (SKU: {p.sku || p.codigo_barras}) — Stock actual: {p.stock_real} {p.unidad_medida}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Proveedor y Remisión */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Proveedor / Fabricante *
+                  </label>
+                  <Input
+                    required
+                    value={recibirProveedor}
+                    onChange={(e) => setRecibirProveedor(e.target.value)}
+                    placeholder="ej: Cooperativa La Cruz Azul"
+                    className="h-9 text-xs font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    No. Remisión / Factura *
+                  </label>
+                  <div className="relative">
+                    <FileText className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <Input
+                      required
+                      value={recibirRemito}
+                      onChange={(e) => setRecibirRemito(e.target.value)}
+                      placeholder="REM-2026-9810"
+                      className="pl-9 h-9 text-xs font-mono font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Cantidad y Lote */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Cantidad a Descargar *
+                  </label>
+                  <div className="relative">
+                    <Input
+                      required
+                      type="number"
+                      min="1"
+                      value={recibirCantidad}
+                      onChange={(e) => setRecibirCantidad(e.target.value)}
+                      className="pr-14 h-9 text-xs font-bold text-slate-900"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs">
+                      {productos.find((p) => p.id === recibirProdId)?.unidad_medida || "UN"}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Lote / Partida de Fabricación
+                  </label>
+                  <Input
+                    value={recibirLote}
+                    onChange={(e) => setRecibirLote(e.target.value)}
+                    placeholder="LOTE-2026-402"
+                    className="h-9 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Destino Operativo (WMS Buffer vs Stock Directo) */}
+              <div className="space-y-2 border-t border-slate-100 pt-3">
+                <label className="font-semibold text-slate-800 block">
+                  Destino del Material en la Bodega
+                </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div
+                    onClick={() => setRecibirDestino("pulmon")}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      recibirDestino === "pulmon"
+                        ? "border-emerald-500 bg-emerald-50/40 text-emerald-950 shadow-2xs"
+                        : "border-slate-200 bg-white hover:border-slate-300 text-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-bold text-xs mb-1">
+                      <ArrowDownToLine className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Pulmón de Entrada / Descarga</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">
+                      <strong>Recomendado WMS:</strong> La carga queda en el muelle de descarga para que el montacarguista realice el <strong>Slotting 2D</strong> hacia los racks y pasillos.
+                    </p>
+                  </div>
+
+                  <div
+                    onClick={() => setRecibirDestino("directo")}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      recibirDestino === "directo"
+                        ? "border-indigo-500 bg-indigo-50/40 text-indigo-950 shadow-2xs"
+                        : "border-slate-200 bg-white hover:border-slate-300 text-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-bold text-xs mb-1">
+                      <Warehouse className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span>Ingreso Directo a Stock Físico</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">
+                      Suma inmediatamente la cantidad al <strong>stock físico real</strong> de la bodega sin pasar por el buffer de acomodo previo.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Acciones */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setModalRecibirAbierto(false)}
+                  className="text-xs"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs"
+                >
+                  <Truck className="w-4 h-4 mr-1.5" />
+                  Confirmar Recepción de Mercadería
                 </Button>
               </div>
             </form>
