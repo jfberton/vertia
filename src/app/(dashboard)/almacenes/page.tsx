@@ -45,6 +45,7 @@ import {
   MOCK_EMBARQUE_ITEMS,
   getSpatialCellsForWarehouse,
   calculateCellStatus,
+  formatLocationCode,
 } from "@/lib/data/mock-spatial-warehouse";
 import {
   getStoredEmbarques,
@@ -339,6 +340,122 @@ export default function AlmacenesPage() {
     showNotification(`Posición liberada y sanitizada para nuevo slotting.`, "info");
   };
 
+  // Agregar nuevo rack en un pasillo
+  const handleAddRack = (
+    pasilloId: string,
+    pasilloNombre: string,
+    rackNum: number,
+    numEstanterias: number,
+    numNiveles: number,
+    capacidadMax: number
+  ) => {
+    if (!almacenSeleccionado) return;
+
+    const newCells: SpatialCell[] = [];
+    for (let est = 1; est <= numEstanterias; est++) {
+      for (let niv = 1; niv <= numNiveles; niv++) {
+        const codigoVisual = formatLocationCode(pasilloId, rackNum, est, niv);
+        newCells.push({
+          id: `cell-${almacenSeleccionado.id}-${pasilloId.toLowerCase()}-r${String(rackNum).padStart(2, "0")}-e${est}-n${niv}`,
+          tenant_id: almacenSeleccionado.tenant_id,
+          almacen_id: almacenSeleccionado.id,
+          codigo_visual: codigoVisual,
+          pasillo_id: pasilloId,
+          pasillo_nombre: pasilloNombre,
+          rack: rackNum,
+          estanteria: est,
+          nivel: niv,
+          capacidad_maxima: capacidadMax,
+          cantidad_actual: 0,
+          peso_max_kg: capacidadMax * 50,
+          peso_actual_kg: 0,
+          porcentaje_ocupacion: 0,
+          estado: "vacio",
+          producto_actual: null,
+          lote: null,
+        });
+      }
+    }
+
+    setWarehouseCellsMap((prev) => {
+      const currentList = prev[almacenSeleccionado.id] || currentWarehouseCells;
+      return {
+        ...prev,
+        [almacenSeleccionado.id]: [...currentList, ...newCells],
+      };
+    });
+
+    showNotification(
+      `Rack ${rackNum} en "${pasilloNombre}" creado exitosamente con ${newCells.length} posiciones vacías.`,
+      "success"
+    );
+  };
+
+  // Quitar rack si no contiene productos
+  const handleRemoveRack = (pasilloId: string, rackNum: number): { success: boolean; error?: string } => {
+    if (!almacenSeleccionado) return { success: false, error: "No hay bodega seleccionada." };
+
+    const currentList = warehouseCellsMap[almacenSeleccionado.id] || currentWarehouseCells;
+    const rackCells = currentList.filter((c) => c.pasillo_id === pasilloId && c.rack === rackNum);
+
+    if (rackCells.length === 0) {
+      return { success: false, error: "El rack especificado no existe." };
+    }
+
+    const occupiedCells = rackCells.filter((c) => c.cantidad_actual > 0 || c.producto_actual);
+    if (occupiedCells.length > 0) {
+      const totalUnits = occupiedCells.reduce((acc, c) => acc + c.cantidad_actual, 0);
+      const errMsg = `No se puede eliminar el Rack ${rackNum}: contiene ${totalUnits} unidades de producto en sus estantes. Debes vaciar o reubicar el stock primero.`;
+      showNotification(errMsg, "info");
+      return { success: false, error: errMsg };
+    }
+
+    setWarehouseCellsMap((prev) => {
+      const list = prev[almacenSeleccionado.id] || currentWarehouseCells;
+      const updated = list.filter((c) => !(c.pasillo_id === pasilloId && c.rack === rackNum));
+      return {
+        ...prev,
+        [almacenSeleccionado.id]: updated,
+      };
+    });
+
+    if (selectedCell && selectedCell.pasillo_id === pasilloId && selectedCell.rack === rackNum) {
+      setSelectedCellId(null);
+    }
+
+    showNotification(`Rack ${rackNum} eliminado de la bodega (todas sus posiciones estaban libres).`, "success");
+    return { success: true };
+  };
+
+  // Quitar celda individual si está vacía
+  const handleRemoveCell = (cellId: string) => {
+    if (!almacenSeleccionado) return;
+
+    const currentList = warehouseCellsMap[almacenSeleccionado.id] || currentWarehouseCells;
+    const targetCell = currentList.find((c) => c.id === cellId);
+
+    if (!targetCell) return;
+
+    if (targetCell.cantidad_actual > 0 || targetCell.producto_actual) {
+      showNotification(`No se puede eliminar la posición ${targetCell.codigo_visual} porque contiene producto.`, "info");
+      return;
+    }
+
+    setWarehouseCellsMap((prev) => {
+      const list = prev[almacenSeleccionado.id] || currentWarehouseCells;
+      return {
+        ...prev,
+        [almacenSeleccionado.id]: list.filter((c) => c.id !== cellId),
+      };
+    });
+
+    if (selectedCellId === cellId) {
+      setSelectedCellId(null);
+    }
+
+    showNotification(`Posición ${targetCell.codigo_visual} eliminada de la bodega.`, "success");
+  };
+
   // Crear almacén
   const handleCrearAlmacen = (e: React.FormEvent) => {
     e.preventDefault();
@@ -628,6 +745,8 @@ export default function AlmacenesPage() {
                     selectedCell={selectedCell}
                     onSelectCell={(cell) => setSelectedCellId(cell.id)}
                     warehouseName={almacenSeleccionado.nombre}
+                    onAddRack={handleAddRack}
+                    onRemoveRack={handleRemoveRack}
                   />
                 </div>
 
@@ -638,6 +757,7 @@ export default function AlmacenesPage() {
                     warehouseName={almacenSeleccionado.nombre}
                     onOpenSlottingWithCell={(cell) => handleOpenSlottingModal(undefined, cell)}
                     onClearCellStock={handleClearCellStock}
+                    onRemoveCell={handleRemoveCell}
                   />
 
                   {/* Ficha GPS & Cobertura Logística */}

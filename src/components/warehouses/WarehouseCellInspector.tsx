@@ -20,6 +20,7 @@ import {
   Building2,
   Info,
   ShieldCheck,
+  Lock,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ interface WarehouseCellInspectorProps {
   warehouseName: string;
   onOpenSlottingWithCell: (cell: SpatialCell) => void;
   onClearCellStock: (cellId: string) => void;
+  onRemoveCell?: (cellId: string) => void;
   onClose?: () => void;
   readOnly?: boolean;
 }
@@ -40,6 +42,7 @@ export function WarehouseCellInspector({
   warehouseName,
   onOpenSlottingWithCell,
   onClearCellStock,
+  onRemoveCell,
   onClose,
   readOnly,
 }: WarehouseCellInspectorProps) {
@@ -296,15 +299,32 @@ export function WarehouseCellInspector({
               </Button>
             )}
 
-            {cell.producto_actual && (
-              <Button
-                variant="outline"
-                onClick={() => onClearCellStock(cell.id)}
-                className="w-full text-slate-600 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 text-xs h-8 font-medium"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                Desalojar Celda (Mover a Pulmón)
-              </Button>
+            {cell.producto_actual ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => onClearCellStock(cell.id)}
+                  className="w-full text-slate-600 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 text-xs h-8 font-medium cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  Desalojar Celda (Mover a Pulmón)
+                </Button>
+                <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Posición protegida: Contiene {cell.cantidad_actual} u. Desaloja el stock para poder quitarla de la bodega.</span>
+                </div>
+              </>
+            ) : (
+              onRemoveCell && (
+                <Button
+                  variant="outline"
+                  onClick={() => onRemoveCell(cell.id)}
+                  className="w-full text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 text-xs h-8 font-bold cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  Quitar Posición Vacía de la Bodega
+                </Button>
+              )
             )}
           </div>
         )}

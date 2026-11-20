@@ -33,7 +33,7 @@ export function Sidebar() {
       user?.rol === "operario");
   const isCliente = user?.rol === "cliente";
 
-  // Menú exclusivo para Corralón / InvenTrack
+  // Menú exclusivo para Bodega de Materiales / InvenTrack
   const menuCorralon = [
     {
       label: "Materiales & Stock",
@@ -42,7 +42,7 @@ export function Sidebar() {
       badge: "InvenTrack",
     },
     {
-      label: "Mi Galpón & Ubicaciones",
+      label: "Mi Bodega & Pasillos",
       href: "/almacenes",
       icon: Warehouse,
     },
@@ -53,10 +53,10 @@ export function Sidebar() {
       badge: "Órdenes",
     },
     {
-      label: "Red Vertia",
+      label: "Mi Exposición en Red",
       href: "/red-b2b",
       icon: Globe2,
-      badge: "Red",
+      badge: "Precios",
     },
   ];
 

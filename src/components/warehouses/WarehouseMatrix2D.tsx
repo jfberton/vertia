@@ -16,6 +16,11 @@ import {
   ChevronRight,
   Maximize2,
   Check,
+  Plus,
+  Trash2,
+  Lock,
+  X,
+  Settings,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +32,15 @@ interface WarehouseMatrix2DProps {
   selectedCell: SpatialCell | null;
   onSelectCell: (cell: SpatialCell) => void;
   warehouseName: string;
+  onAddRack?: (
+    pasilloId: string,
+    pasilloNombre: string,
+    rackNum: number,
+    numEstanterias: number,
+    numNiveles: number,
+    capacidadMax: number
+  ) => void;
+  onRemoveRack?: (pasilloId: string, rackNum: number) => { success: boolean; error?: string };
 }
 
 export function WarehouseMatrix2D({
@@ -34,10 +48,23 @@ export function WarehouseMatrix2D({
   selectedCell,
   onSelectCell,
   warehouseName,
+  onAddRack,
+  onRemoveRack,
 }: WarehouseMatrix2DProps) {
   const [selectedPasillo, setSelectedPasillo] = useState<string>("all");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Modal para configurar / agregar un nuevo rack
+  const [modalNuevoRack, setModalNuevoRack] = useState(false);
+  const [pasilloDestino, setPasilloDestino] = useState<string>("P1");
+  const [esNuevoPasillo, setEsNuevoPasillo] = useState(false);
+  const [nuevoPasilloId, setNuevoPasilloId] = useState("P3");
+  const [nuevoPasilloNombre, setNuevoPasilloNombre] = useState("Pasillo 3 - Metales y Viguetas");
+  const [nuevoRackNum, setNuevoRackNum] = useState<number>(2);
+  const [numEstanterias, setNumEstanterias] = useState<number>(2);
+  const [numNiveles, setNumNiveles] = useState<number>(3);
+  const [capacidadPorCelda, setCapacidadPorCelda] = useState<number>(100);
 
   // Lista única de pasillos disponibles
   const pasillos = useMemo(() => {
@@ -214,6 +241,16 @@ export function WarehouseMatrix2D({
                 Limpiar
               </Button>
             )}
+
+            {/* Botón para Configurar y Agregar Rack */}
+            <Button
+              size="sm"
+              onClick={() => setModalNuevoRack(true)}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs h-8 px-3 rounded-lg flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Agregar Pasillo / Rack</span>
+            </Button>
           </div>
         </div>
 
@@ -367,15 +404,46 @@ export function WarehouseMatrix2D({
                     className="bg-slate-50/70 border border-slate-200 rounded-xl p-3 space-y-2"
                   >
                     {/* Header del Rack */}
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
-                      <span className="flex items-center gap-1.5">
-                        <Building className="w-3.5 h-3.5 text-indigo-500" />
-                        Rack {rack.rackNum.toString().padStart(2, "0")}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-normal">
-                        {rack.estanterias.length} Estantes · {rack.niveles.length} Niveles
-                      </span>
-                    </div>
+                    {(() => {
+                      const totalProductsInRack = rack.rackCells.reduce((acc, c) => acc + c.cantidad_actual, 0);
+                      const hasProductsInRack = totalProductsInRack > 0;
+
+                      return (
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1 pb-1 border-b border-slate-200/60">
+                          <div className="flex items-center gap-1.5">
+                            <Building className="w-3.5 h-3.5 text-indigo-600" />
+                            <span className="font-extrabold text-slate-900">
+                              Rack {rack.rackNum.toString().padStart(2, "0")}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-normal">
+                              ({rack.estanterias.length} Estantes · {rack.niveles.length} Niveles)
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {hasProductsInRack ? (
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md"
+                                title="Contiene stock activo. No se puede quitar mientras tenga producto asignado."
+                              >
+                                <Lock className="w-3 h-3 text-amber-600" />
+                                <span>{totalProductsInRack} u alojadas</span>
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => onRemoveRack && onRemoveRack(pasillo.pasilloId, rack.rackNum)}
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                                title="Eliminar este rack vacío"
+                              >
+                                <Trash2 className="w-3 h-3 text-rose-500" />
+                                <span>Quitar Rack</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Matriz Vertical: Niveles de Arriba (N3) a Abajo (N1) */}
                     <div className="space-y-1.5">
@@ -502,6 +570,213 @@ export function WarehouseMatrix2D({
           </span>
         )}
       </div>
+
+      {/* Modal para Configurar y Agregar Rack */}
+      {modalNuevoRack && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 text-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <Building className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    Configurar Almacenamiento
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Agrega un nuevo rack o pasillo a la bodega
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalNuevoRack(false)}
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const pId = esNuevoPasillo ? nuevoPasilloId.trim().toUpperCase() : pasilloDestino;
+                const pNom = esNuevoPasillo
+                  ? nuevoPasilloNombre.trim()
+                  : pasillos.find((p) => p.id === pasilloDestino)?.nombre || `Pasillo ${pId}`;
+
+                if (onAddRack) {
+                  onAddRack(
+                    pId,
+                    pNom,
+                    Number(nuevoRackNum),
+                    Number(numEstanterias),
+                    Number(numNiveles),
+                    Number(capacidadPorCelda)
+                  );
+                }
+                setModalNuevoRack(false);
+              }}
+              className="space-y-3.5 text-xs"
+            >
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Pasillo de Destino *
+                </label>
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setEsNuevoPasillo(false)}
+                    className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold border transition-all ${
+                      !esNuevoPasillo
+                        ? "bg-indigo-50 border-indigo-300 text-indigo-700"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    Pasillo Existente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEsNuevoPasillo(true)}
+                    className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold border transition-all ${
+                      esNuevoPasillo
+                        ? "bg-indigo-50 border-indigo-300 text-indigo-700"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    + Nuevo Pasillo
+                  </button>
+                </div>
+
+                {!esNuevoPasillo ? (
+                  <select
+                    value={pasilloDestino}
+                    onChange={(e) => setPasilloDestino(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
+                  >
+                    {pasillos.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.nombre} ({p.id})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Input
+                        placeholder="Código (P3)"
+                        value={nuevoPasilloId}
+                        onChange={(e) => setNuevoPasilloId(e.target.value)}
+                        className="text-xs font-bold uppercase"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        placeholder="Nombre (ej. Pasillo 3 - Metales)"
+                        value={nuevoPasilloNombre}
+                        onChange={(e) => setNuevoPasilloNombre(e.target.value)}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Número de Rack *
+                  </label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={nuevoRackNum}
+                    onChange={(e) => setNuevoRackNum(Number(e.target.value))}
+                    className="text-xs font-bold"
+                  />
+                  <span className="text-[10px] text-slate-400">ej. 1, 2, 3...</span>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Estantes (Columnas) *
+                  </label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={6}
+                    value={numEstanterias}
+                    onChange={(e) => setNumEstanterias(Number(e.target.value))}
+                    className="text-xs font-bold"
+                  />
+                  <span className="text-[10px] text-slate-400">1 a 6 estantes</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Niveles de Altura *
+                  </label>
+                  <select
+                    value={numNiveles}
+                    onChange={(e) => setNumNiveles(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
+                  >
+                    <option value={1}>1 Nivel (Solo Suelo N1)</option>
+                    <option value={2}>2 Niveles (N1 Suelo + N2 Medio)</option>
+                    <option value={3}>3 Niveles (N1, N2 y N3 Alto)</option>
+                    <option value={4}>4 Niveles (Industrial Completo)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Capacidad por Celda *
+                  </label>
+                  <Input
+                    type="number"
+                    min={10}
+                    step={10}
+                    value={capacidadPorCelda}
+                    onChange={(e) => setCapacidadPorCelda(Number(e.target.value))}
+                    className="text-xs font-bold"
+                  />
+                  <span className="text-[10px] text-slate-400">bultos / unidades</span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1">
+                <span className="font-bold text-slate-800 block">
+                  Resumen de Capacidad a Crear:
+                </span>
+                <span>
+                  Se generarán <strong>{numEstanterias * numNiveles} posiciones vacías</strong> listas para slotting de mercadería en el pasillo indicado.
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setModalNuevoRack(false)}
+                  className="text-xs"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 cursor-pointer"
+                >
+                  Crear Rack en Bodega
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
