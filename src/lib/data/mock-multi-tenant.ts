@@ -206,6 +206,9 @@ export interface ProfesionalServicio {
   email?: string;
   ciudad: string;
   zona_cobertura: string;
+  costo_visita?: number;
+  descripcion_experiencia?: string;
+  portfolio_fotos?: { titulo: string; descripcion: string; foto_url?: string }[];
   calificacion: number;
   trabajos_completados: number;
   activo: boolean;
@@ -255,6 +258,18 @@ export const MOCK_PROFESIONALES: ProfesionalServicio[] = [
     email: "roberto.gasista@gmail.com",
     ciudad: "Rosario",
     zona_cobertura: "Rosario y Gran Rosario (Radio 30km)",
+    costo_visita: 12000,
+    descripcion_experiencia: "Especialista en redes de gas en media y baja presión, montantes para edificios y pruebas de hermeticidad con certificación ENARGAS.",
+    portfolio_fotos: [
+      {
+        titulo: "Montante de gas en edificio Torre Sur",
+        descripcion: "Instalación de cañería de 2 pulgadas en polietileno termofusionado y batería de 18 medidores.",
+      },
+      {
+        titulo: "Instalación de calderas centrales",
+        descripcion: "Montaje y calibración de sistema bitérmico con ventilación forzada en complejo residencial.",
+      },
+    ],
     calificacion: 4.9,
     trabajos_completados: 42,
     activo: true,
@@ -271,6 +286,14 @@ export const MOCK_PROFESIONALES: ProfesionalServicio[] = [
     email: "claudio.sanitarista@hotmail.com",
     ciudad: "Rosario",
     zona_cobertura: "Rosario Centro y Sur",
+    costo_visita: 10000,
+    descripcion_experiencia: "Instalaciones sanitarias integrales de agua fría y caliente, desagües pluviales y cloacales con materiales de última generación.",
+    portfolio_fotos: [
+      {
+        titulo: "Batería de tanques y presurizadoras",
+        descripcion: "Colector de distribución con termofusión de 63mm y bombas dobles inteligentes.",
+      },
+    ],
     calificacion: 4.8,
     trabajos_completados: 67,
     activo: true,
@@ -287,6 +310,14 @@ export const MOCK_PROFESIONALES: ProfesionalServicio[] = [
     email: "esteban.electrico@gmail.com",
     ciudad: "Rosario",
     zona_cobertura: "Rosario y Funes",
+    costo_visita: 14000,
+    descripcion_experiencia: "Tableros seccionales y principales para edificios, cálculo de cargas, puesta a tierra certificada y cableado estructurado.",
+    portfolio_fotos: [
+      {
+        titulo: "Tablero principal trifásico 120A",
+        descripcion: "Armado de tablero con protecciones Schneider, descargadores de sobretensión y peines de conexión.",
+      },
+    ],
     calificacion: 5.0,
     trabajos_completados: 55,
     activo: true,
@@ -298,16 +329,24 @@ export const MOCK_PROFESIONALES: ProfesionalServicio[] = [
     nombre: "Cuadrilla Maestro Raúl",
     cuit_rut: "23-22194852-9",
     rubro: "Albañil / Constructor",
-    matricula: "UOCRA-58210",
-    telefono: "+54 9 341 599-1122",
-    email: "cuadrilla.raul@obras.com",
+    matricula: "UOCRA-8911",
+    telefono: "+54 9 341 599-0011",
+    email: "cuadrilla.raul@gmail.com",
     ciudad: "Rosario",
-    zona_cobertura: "Toda la provincia",
-    calificacion: 4.7,
-    trabajos_completados: 89,
+    zona_cobertura: "Gran Rosario y alrededores",
+    costo_visita: 15000,
+    descripcion_experiencia: "Albañilería de obra gruesa y fina, revoques proyectados, mampostería encadenada y colocación de porcelanatos de gran formato.",
+    portfolio_fotos: [
+      {
+        titulo: "Tabiquería de hormigón a la vista",
+        descripcion: "Encofrado fenólico y colado de 45 m2 de tabique arquitectónico con acabado pulido.",
+      },
+    ],
+    calificacion: 4.9,
+    trabajos_completados: 38,
     activo: true,
-    tarifa_hora_estimada: 18000,
-    created_at: "2025-03-01",
+    tarifa_hora_estimada: 11000,
+    created_at: "2025-08-01",
   },
   {
     id: "prof-005",

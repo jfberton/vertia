@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Users,
   Warehouse,
+  Wrench,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -72,11 +73,13 @@ export default function LoginPage() {
 
   const handle1ClickLogin = (userId: string, tipo: string) => {
     loginAsDemoUser(userId);
-    // Usuarios de corralón van directo a InvenTrack (Materiales & Stock)
+    // Usuarios de bodega van directo a InvenTrack (Materiales & Stock)
     if (tipo === "corralon") {
       router.push(resolveDestination("/productos"));
     } else if (tipo === "cliente") {
       router.push(resolveDestination("/cliente"));
+    } else if (tipo === "profesional") {
+      router.push(resolveDestination("/cliente?tab=servicios"));
     } else {
       router.push(resolveDestination("/dashboard"));
     }
@@ -109,63 +112,75 @@ export default function LoginPage() {
     },
     {
       id: "usr-martin-rossi",
-      email: "martin.rossi@lospinos.com.ar",
+      email: "martin.rossi@lospinos.com.mx",
       nombre: "Ing. Martín Rossi",
       rolTitulo: "Administrador General",
-      empresa: "Corralón Los Pinos S.R.L.",
+      empresa: "Casa de Materiales Los Pinos S.A. de C.V.",
       tipo: "corralon",
-      badgeText: "Admin Corralón",
+      badgeText: "Admin Bodega",
       badgeColor: "bg-indigo-100 text-indigo-800 border-indigo-300",
       icon: Building2,
-      descripcion: "Control total de Galpón Oeste (25 km), inventario real vs disponible y pedidos.",
+      descripcion: "Control total de Bodega Poniente (25 km), inventario físico vs apartado y pedidos.",
     },
     {
       id: "usr-juan-capataz",
-      email: "juan.capataz@lospinos.com.ar",
+      email: "juan.capataz@lospinos.com.mx",
       nombre: "Juan Capataz",
-      rolTitulo: "Operario de Galpón",
-      empresa: "Corralón Los Pinos S.R.L.",
+      rolTitulo: "Operario de Bodega",
+      empresa: "Casa de Materiales Los Pinos S.A. de C.V.",
       tipo: "corralon",
-      badgeText: "Operario Galpón",
+      badgeText: "Operario Bodega",
       badgeColor: "bg-sky-100 text-sky-800 border-sky-300",
       icon: Warehouse,
-      descripcion: "Recepción de camiones, muelle de entrada y ubicación en estanterías.",
+      descripcion: "Recepción de camiones en muelle y ubicación en pasillos, estantes y niveles.",
     },
     {
       id: "usr-carlos-benitez",
-      email: "carlos.benitez@materialescentro.com.ar",
+      email: "carlos.benitez@materialescentro.com.mx",
       nombre: "Lic. Carlos Benítez",
       rolTitulo: "Administrador de Sucursal",
-      empresa: "Materiales del Centro S.A.",
+      empresa: "Materiales del Centro S.A. de C.V.",
       tipo: "corralon",
-      badgeText: "Admin Corralón",
+      badgeText: "Admin Bodega",
       badgeColor: "bg-purple-100 text-purple-800 border-purple-300",
       icon: Building2,
       descripcion: "Gestión comercial y operativa de sucursal Centro (40 km cobertura).",
     },
     {
       id: "usr-lucas-deposito",
-      email: "lucas.deposito@materialescentro.com.ar",
+      email: "lucas.deposito@materialescentro.com.mx",
       nombre: "Lucas Depósito",
-      rolTitulo: "Operario de Galpón",
-      empresa: "Materiales del Centro S.A.",
+      rolTitulo: "Operario de Surtido",
+      empresa: "Materiales del Centro S.A. de C.V.",
       tipo: "corralon",
-      badgeText: "Operario Galpón",
+      badgeText: "Surtidor Bodega",
       badgeColor: "bg-violet-100 text-violet-800 border-violet-300",
       icon: Truck,
-      descripcion: "Surtido en Racks Pesados y preparación de despachos con remito.",
+      descripcion: "Surtido guiado y preparación de despachos con nota de remisión digital con QR.",
     },
     {
       id: "usr-sofia-valenzuela",
       email: "sofia.valenzuela@constructora.com",
       nombre: "Arq. Sofia Valenzuela",
-      rolTitulo: "Cliente / Obra Solicitante",
-      empresa: "Constructora Arcos / Obras Modernas",
+      rolTitulo: "Directora de Obra / Compras",
+      empresa: "Constructora Arcos de México S.A. de C.V.",
       tipo: "cliente",
-      badgeText: "Cliente / Obra",
+      badgeText: "Contratista / Obra",
       badgeColor: "bg-teal-100 text-teal-800 border-teal-300",
       icon: HardHat,
-      descripcion: "Emisión de solicitudes de suministro, seguimiento en vivo y validación con fotos.",
+      descripcion: "Emisión de requerimientos de obra, seguimiento en vivo y validación con fotos.",
+    },
+    {
+      id: "usr-javier-morales",
+      email: "javier.morales@profesionales.vertia.com",
+      nombre: "Ing. Javier Morales",
+      rolTitulo: "Técnico Especialista en Instalaciones",
+      empresa: "Red de Profesionales Calificados",
+      tipo: "profesional",
+      badgeText: "Red Profesionales",
+      badgeColor: "bg-purple-100 text-purple-800 border-purple-300",
+      icon: Wrench,
+      descripcion: "Perfil certificado STPS, portfolio fotográfico de obras y cobro con custodia escrow.",
     },
   ];
 
@@ -289,7 +304,7 @@ export default function LoginPage() {
 
             <div className="mt-6 pt-6 border-t border-slate-800/80 text-center">
               <p className="text-xs text-slate-400">
-                ¿Deseas dar de alta tu almacén o corralón?{" "}
+                ¿Deseas dar de alta tu empresa o casa de materiales?{" "}
                 <Link
                   href="/register"
                   className="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-2"
@@ -309,10 +324,10 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-white tracking-tight">
-                    Quick Demo Switcher (1-Click Login)
+                    Conmutador de Perfiles Demo (1-Click Login)
                   </h2>
                   <p className="text-xs text-slate-400">
-                    Evalúa la plataforma al instante navegando con cualquiera de los 7 perfiles reales:
+                    Evalúa la plataforma al instante navegando con cualquiera de los 8 perfiles activos:
                   </p>
                 </div>
               </div>
@@ -381,7 +396,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-800/60 py-4 text-center text-xs text-slate-500">
-        VERTIA Platform • InvenTrack v2 Multi-Tenant • Rosario & Red Nacional B2B
+        VERTIA Platform • InvenTrack v2 Multi-Tenant • Red Nacional de Construcción B2B
       </footer>
     </div>
   );

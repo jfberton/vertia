@@ -295,6 +295,9 @@ export interface ProfesionalServicio {
   email?: string;
   ciudad: string;
   zona_cobertura: string;
+  costo_visita?: number;
+  descripcion_experiencia?: string;
+  portfolio_fotos?: { titulo: string; descripcion: string; foto_url?: string }[];
   calificacion: number; // 1-5 estrellas
   trabajos_completados: number;
   activo: boolean;

@@ -62,8 +62,8 @@ body {
   color: #5d718e !important;
 }
 
-.vertia-landing > section:not(.landing-hero) [class*="bg-slate-900"],
-.vertia-landing > section:not(.landing-hero) [class*="bg-slate-950"] {
+.vertia-landing > section:not(.landing-hero):not(#flujo) [class*="bg-slate-900"],
+.vertia-landing > section:not(.landing-hero):not(#flujo) [class*="bg-slate-950"] {
   background-color: #ffffff !important;
 }
 
@@ -116,6 +116,23 @@ body {
 .vertia-landing #flujo > div > div.rounded-3xl .text-slate-300,
 .vertia-landing #flujo > div > div.rounded-3xl .text-slate-400,
 .vertia-landing #flujo > div > div.rounded-3xl .text-slate-500 {
+  color: #c3d4e8 !important;
+}
+
+/* Evitar que las cajas internas de trazabilidad se pongan blancas con texto blanco */
+.vertia-landing #flujo [class*="bg-slate-950"],
+.vertia-landing #flujo [class*="bg-slate-900"] {
+  background-color: #0d2854 !important;
+  border-color: #1c457d !important;
+}
+
+.vertia-landing #flujo [class*="bg-slate-950"] .text-white,
+.vertia-landing #flujo [class*="bg-slate-900"] .text-white {
+  color: #ffffff !important;
+}
+
+.vertia-landing #flujo [class*="bg-slate-950"] .text-slate-400,
+.vertia-landing #flujo [class*="bg-slate-900"] .text-slate-400 {
   color: #c3d4e8 !important;
 }
 

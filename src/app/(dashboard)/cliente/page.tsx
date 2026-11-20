@@ -82,6 +82,15 @@ export default function ClientePage() {
   };
 
   useEffect(() => {
+    // Soporte para abrir pestaña directa por URL (?tab=servicios, etc.)
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "servicios" || tabParam === "obras" || tabParam === "catalogo_red" || tabParam === "pedidos") {
+        setTabActiva(tabParam as TabCliente);
+      }
+    }
+
     // Carga de obras y órdenes asociadas al cliente
     const obrasGuardadas = getStoredObras(clienteId);
     setObras(obrasGuardadas);
@@ -707,13 +716,32 @@ export default function ClientePage() {
                         <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                         <span>{prof.telefono}</span>
                       </div>
+                      {prof.costo_visita && (
+                        <div className="text-[11px] text-slate-600 font-medium pt-1">
+                          Visita técnica: <strong className="text-slate-800">${prof.costo_visita.toLocaleString("es-AR")}</strong>
+                        </div>
+                      )}
+                      {prof.descripcion_experiencia && (
+                        <p className="text-[10px] text-slate-500 italic line-clamp-2 pt-0.5">
+                          "{prof.descripcion_experiencia}"
+                        </p>
+                      )}
+                      {prof.portfolio_fotos && prof.portfolio_fotos.length > 0 && (
+                        <div className="pt-1 flex items-center gap-1 text-[10px] text-indigo-600 font-semibold">
+                          <Eye className="w-3 h-3" />
+                          <span>{prof.portfolio_fotos.length} fotos de portfolio</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between mt-2">
-                    <span className="text-xs font-extrabold text-slate-800">
-                      ${prof.tarifa_hora_estimada?.toLocaleString("es-AR") || "8.500"}/h
-                    </span>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block leading-none">Mano de obra</span>
+                      <span className="text-xs font-extrabold text-slate-800">
+                        ${prof.tarifa_hora_estimada?.toLocaleString("es-AR") || "8.500"}/h
+                      </span>
+                    </div>
                     <Button
                       size="sm"
                       variant="outline"

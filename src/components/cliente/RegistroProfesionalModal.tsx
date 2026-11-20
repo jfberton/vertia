@@ -48,6 +48,8 @@ export function RegistroProfesionalModal({
   const [ciudad, setCiudad] = useState("Buenos Aires");
   const [zonaCobertura, setZonaCobertura] = useState("CABA y Zona Norte");
   const [tarifaHora, setTarifaHora] = useState(9500);
+  const [costoVisita, setCostoVisita] = useState(12000);
+  const [descripcionExperiencia, setDescripcionExperiencia] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -69,6 +71,8 @@ export function RegistroProfesionalModal({
       email: email.trim() || undefined,
       ciudad: ciudad.trim() || "Buenos Aires",
       zona_cobertura: zonaCobertura.trim() || "CABA y Gran Buenos Aires",
+      costo_visita: Number(costoVisita) || 10000,
+      descripcion_experiencia: descripcionExperiencia.trim() || undefined,
       calificacion: 5.0,
       trabajos_completados: 0,
       activo: true,
@@ -201,8 +205,8 @@ export function RegistroProfesionalModal({
             </div>
           </div>
 
-          {/* Cobertura y Tarifa */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Cobertura, Tarifa y Costo Visita */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Zona de Cobertura
@@ -216,7 +220,20 @@ export function RegistroProfesionalModal({
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Tarifa Horaria Estimada ($ ARS)
+                Costo Visita Técnica ($)
+              </label>
+              <Input
+                type="number"
+                min="0"
+                step="500"
+                value={costoVisita}
+                onChange={(e) => setCostoVisita(Number(e.target.value))}
+                className="text-xs h-9 bg-slate-50 font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Tarifa Hora Estimada ($)
               </label>
               <Input
                 type="number"
@@ -227,6 +244,20 @@ export function RegistroProfesionalModal({
                 className="text-xs h-9 bg-slate-50 font-bold"
               />
             </div>
+          </div>
+
+          {/* Portfolio y Especialidades */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Portfolio / Tipos de Trabajos que Realizas
+            </label>
+            <textarea
+              value={descripcionExperiencia}
+              onChange={(e) => setDescripcionExperiencia(e.target.value)}
+              placeholder="Describe tu experiencia, especialidades y tipos de obras donde trabajas (ej: Instalaciones de gas en media presión, soldadura de montantes, tendidos cloacales en PVC)..."
+              rows={2}
+              className="w-full text-xs p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
           </div>
 
           {/* Beneficio Red Vertia */}
