@@ -20,7 +20,7 @@ import {
 } from "../data/mock-spatial-warehouse";
 
 const STORAGE_KEYS = {
-  PRODUCTOS: "inventrack_hybrid_productos",
+  PRODUCTOS: "inventrack_hybrid_productos_v2",
   ALMACENES: "inventrack_hybrid_almacenes",
   UBICACIONES: "inventrack_hybrid_ubicaciones",
   ORDENES: "inventrack_hybrid_ordenes",

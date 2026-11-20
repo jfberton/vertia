@@ -36,7 +36,7 @@ export function Sidebar() {
   // Menú exclusivo para Bodega de Materiales / InvenTrack
   const menuCorralon = [
     {
-      label: "Materiales & Stock",
+      label: "Materiales y Stock",
       href: "/productos",
       icon: Boxes,
       badge: "InvenTrack",
@@ -51,12 +51,6 @@ export function Sidebar() {
       href: "/ordenes",
       icon: ClipboardList,
       badge: "Órdenes",
-    },
-    {
-      label: "Mi Exposición en Red",
-      href: "/red-b2b",
-      icon: Globe2,
-      badge: "Precios",
     },
   ];
 

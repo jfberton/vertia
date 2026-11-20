@@ -60,17 +60,25 @@ export interface MultiTenantUbicacion {
   estado: "vacio" | "ocupado" | "completo";
 }
 
+export type TipoListaPrecio = "mostrador" | "contratista" | "red_vertia";
+
 export interface MultiTenantProducto {
   id: string;
   tenant_id: string;
   codigo_barras: string;
+  sku?: string;
   nombre: string;
   categoria: string;
   unidad_medida: string;
-  precio: number;
-  stock_real: number;          // Físico en galpón
-  stock_comprometido: number;  // Reservado en órdenes
-  stock_disponible: number;    // Libre para la red o mostrador (stock_real - stock_comprometido)
+  precio: number;                   // Precio base mostrador ($ MXN)
+  precio_mostrador?: number;         // Precio regular de mostrador
+  lista_precio_activa?: TipoListaPrecio; // Lista asignada para cotización
+  bonificacion_porcentaje?: number;  // % de bonificación o descuento (ej: 5%)
+  precio_red_vertia?: number;        // Precio neto cotizado a la Red VERTIA ($ MXN)
+  stock_real: number;               // Físico contado en bodega
+  stock_comprometido: number;       // Reservado en órdenes y despachos
+  stock_disponible: number;         // Libre (stock_real - stock_comprometido)
+  stock_apartado_red?: number;      // Unidades asignadas a la Red VERTIA
   modo_disponible?: "automatico" | "cupo_manual";
   cupo_manual_red?: number;
   cantidad_minima: number;
@@ -649,9 +657,9 @@ export const MOCK_UBICACIONES: MultiTenantUbicacion[] = [
     rack: 1,
     estanteria: 1,
     nivel: 1,
-    producto_actual: "Cemento Loma Negra 50kg (Bolsa)",
+    producto_actual: "Cemento Cruz Azul Gris 50kg (Bolsa)",
     cantidad: 120,
-    lote: "LOTE-LN-2024-X4",
+    lote: "LOTE-CAZ-2026-X1",
     estado: "completo",
   },
   {
@@ -664,9 +672,9 @@ export const MOCK_UBICACIONES: MultiTenantUbicacion[] = [
     rack: 2,
     estanteria: 1,
     nivel: 1,
-    producto_actual: "Cal Santa Elena Hidratada (Bolsa 25kg)",
-    cantidad: 80,
-    lote: "LOTE-SE-8891",
+    producto_actual: "Cal Hidratada de Alta Pureza 25kg",
+    cantidad: 90,
+    lote: "LOTE-CAL-8891",
     estado: "ocupado",
   },
   {
@@ -679,7 +687,7 @@ export const MOCK_UBICACIONES: MultiTenantUbicacion[] = [
     rack: 1,
     estanteria: 1,
     nivel: 1,
-    producto_actual: "Arena Fina de Río (Bolsón 1m³)",
+    producto_actual: "Arena Lavada de Río (M3)",
     cantidad: 18,
     lote: "LOTE-AR-2401",
     estado: "ocupado",
@@ -765,110 +773,206 @@ export const MOCK_UBICACIONES: MultiTenantUbicacion[] = [
 // PRODUCTOS CON MÉTRICA DUAL POR TENANT
 // ==========================================
 export const MOCK_PRODUCTOS: MultiTenantProducto[] = [
-  // Corralón Los Pinos S.R.L.
+  // Corralón Los Pinos S.R.L. (Inventario Local México)
   {
     id: "prod-pinos-cemento",
     tenant_id: "tenant-los-pinos",
-    codigo_barras: "7791234567890",
-    nombre: "Cemento Loma Negra 50kg (Bolsa)",
-    categoria: "Obra Gruesa",
+    codigo_barras: "750123450001",
+    sku: "CEM-CAZ-50",
+    nombre: "Cemento Cruz Azul Gris 50kg (Bolsa)",
+    categoria: "Cementos y Adhesivos",
     unidad_medida: "BL",
-    precio: 9800.0,
+    precio: 245.0,
+    precio_mostrador: 245.0,
+    lista_precio_activa: "red_vertia",
+    bonificacion_porcentaje: 4.08,
+    precio_red_vertia: 235.0,
     stock_real: 120,          // Stock Real Físico
-    stock_comprometido: 60,   // Comprometido
-    stock_disponible: 60,     // Disponible (120 - 60 = 60)
-    cantidad_minima: 40,
+    stock_comprometido: 40,   // Comprometido
+    stock_disponible: 80,     // Disponible mostrador (120 - 40 = 80)
+    stock_apartado_red: 60,   // Apartado para Red VERTIA
+    modo_disponible: "cupo_manual",
+    cupo_manual_red: 60,
+    cantidad_minima: 30,
     cantidad_maxima: 500,
     publicado_en_red: true,
     almacen_id: "alm-pinos-central",
-    ubicacion_estanteria: "Galpón Central Oeste • Rack 01 • Nivel 1",
+    ubicacion_estanteria: "Pasillo A • Rack 01",
   },
   {
-    id: "prod-pinos-arena",
+    id: "prod-pinos-varilla",
     tenant_id: "tenant-los-pinos",
-    codigo_barras: "7795556667771",
-    nombre: "Arena Fina de Río (Bolsón 1m³)",
-    categoria: "Áridos",
-    unidad_medida: "M3",
-    precio: 22000.0,
-    stock_real: 18,           // Real: 18
-    stock_comprometido: 12,   // Comprometido: 12
-    stock_disponible: 6,      // Disponible: 6
-    cantidad_minima: 10,
-    cantidad_maxima: 50,
+    codigo_barras: "750123450002",
+    sku: "VAR-COR-12",
+    nombre: "Varilla Corrugada Grado 42 - 1/2 pulgada (Tramo 12m)",
+    categoria: "Aceros y Perfiles",
+    unidad_medida: "PZA",
+    precio: 285.0,
+    precio_mostrador: 285.0,
+    lista_precio_activa: "red_vertia",
+    bonificacion_porcentaje: 5.26,
+    precio_red_vertia: 270.0,
+    stock_real: 180,
+    stock_comprometido: 60,
+    stock_disponible: 120,
+    stock_apartado_red: 80,
+    modo_disponible: "cupo_manual",
+    cupo_manual_red: 80,
+    cantidad_minima: 40,
+    cantidad_maxima: 600,
     publicado_en_red: true,
     almacen_id: "alm-pinos-central",
-    ubicacion_estanteria: "Galpón Central Oeste • Tolva Silo 3",
+    ubicacion_estanteria: "Pasillo B • Patio Metal",
   },
   {
     id: "prod-pinos-cal",
     tenant_id: "tenant-los-pinos",
-    codigo_barras: "7793332221115",
-    nombre: "Cal Santa Elena Hidratada (Bolsa 25kg)",
-    categoria: "Obra Gruesa",
+    codigo_barras: "750123450003",
+    sku: "CAL-HID-25",
+    nombre: "Cal Hidratada de Alta Pureza 25kg",
+    categoria: "Cementos y Adhesivos",
     unidad_medida: "BL",
-    precio: 4500.0,
-    stock_real: 80,           // Real: 80
-    stock_comprometido: 30,   // Comprometido: 30
-    stock_disponible: 50,     // Disponible: 50
-    cantidad_minima: 25,
+    precio: 95.0,
+    precio_mostrador: 95.0,
+    lista_precio_activa: "red_vertia",
+    bonificacion_porcentaje: 6.31,
+    precio_red_vertia: 89.0,
+    stock_real: 90,
+    stock_comprometido: 25,
+    stock_disponible: 65,
+    stock_apartado_red: 45,
+    modo_disponible: "cupo_manual",
+    cupo_manual_red: 45,
+    cantidad_minima: 20,
     cantidad_maxima: 300,
     publicado_en_red: true,
     almacen_id: "alm-pinos-central",
-    ubicacion_estanteria: "Galpón Central Oeste • Rack 02 • Nivel 1",
+    ubicacion_estanteria: "Pasillo A • Rack 02",
+  },
+  {
+    id: "prod-pinos-arena",
+    tenant_id: "tenant-los-pinos",
+    codigo_barras: "750123450004",
+    sku: "ARE-LAV-M3",
+    nombre: "Arena Lavada de Río (M3)",
+    categoria: "Áridos y Graneles",
+    unidad_medida: "M3",
+    precio: 480.0,
+    precio_mostrador: 480.0,
+    lista_precio_activa: "red_vertia",
+    bonificacion_porcentaje: 6.25,
+    precio_red_vertia: 450.0,
+    stock_real: 45,
+    stock_comprometido: 15,
+    stock_disponible: 30,
+    stock_apartado_red: 20,
+    modo_disponible: "cupo_manual",
+    cupo_manual_red: 20,
+    cantidad_minima: 10,
+    cantidad_maxima: 100,
+    publicado_en_red: true,
+    almacen_id: "alm-pinos-central",
+    ubicacion_estanteria: "Patio Abierto • Bahía 1",
+  },
+  {
+    id: "prod-pinos-grava",
+    tenant_id: "tenant-los-pinos",
+    codigo_barras: "750123450005",
+    sku: "GRA-TRIT-M3",
+    nombre: "Grava Triturada 3/4 pulgada (M3)",
+    categoria: "Áridos y Graneles",
+    unidad_medida: "M3",
+    precio: 520.0,
+    precio_mostrador: 520.0,
+    lista_precio_activa: "mostrador",
+    bonificacion_porcentaje: 4.8,
+    precio_red_vertia: 495.0,
+    stock_real: 35,
+    stock_comprometido: 10,
+    stock_disponible: 25,
+    stock_apartado_red: 0,
+    modo_disponible: "automatico",
+    cupo_manual_red: 0,
+    cantidad_minima: 10,
+    cantidad_maxima: 80,
+    publicado_en_red: false, // Solo Mostrador
+    almacen_id: "alm-pinos-central",
+    ubicacion_estanteria: "Patio Abierto • Bahía 2",
+  },
+  {
+    id: "prod-pinos-tabique",
+    tenant_id: "tenant-los-pinos",
+    codigo_barras: "750123450006",
+    sku: "TAB-ROJ-MIL",
+    nombre: "Tabique Rojo Recocido (Millar)",
+    categoria: "Mampostería y Tabiques",
+    unidad_medida: "MIL",
+    precio: 3600.0,
+    precio_mostrador: 3600.0,
+    lista_precio_activa: "red_vertia",
+    bonificacion_porcentaje: 4.16,
+    precio_red_vertia: 3450.0,
+    stock_real: 12,
+    stock_comprometido: 4,
+    stock_disponible: 8,
+    stock_apartado_red: 6,
+    modo_disponible: "cupo_manual",
+    cupo_manual_red: 6,
+    cantidad_minima: 3,
+    cantidad_maxima: 30,
+    publicado_en_red: true,
+    almacen_id: "alm-pinos-central",
+    ubicacion_estanteria: "Patio Materiales • Fila 03",
   },
 
   // Materiales del Centro S.A.
   {
-    id: "prod-centro-hierro-10",
+    id: "prod-centro-alambre",
     tenant_id: "tenant-materiales-centro",
-    codigo_barras: "7798765432109",
-    nombre: "Hierro Nervado Ø 10mm (Barra 12m)",
-    categoria: "Hierros & Acero",
-    unidad_medida: "UN",
-    precio: 14500.0,
-    stock_real: 250,          // Real: 250
-    stock_comprometido: 100,  // Comprometido: 100
-    stock_disponible: 150,    // Disponible: 150
-    cantidad_minima: 50,
-    cantidad_maxima: 600,
+    codigo_barras: "750999000101",
+    sku: "ALA-REC-50",
+    nombre: "Alambre Recocido Calibre 16 (Rollo 50kg)",
+    categoria: "Aceros y Perfiles",
+    unidad_medida: "ROL",
+    precio: 1850.0,
+    precio_mostrador: 1850.0,
+    lista_precio_activa: "red_vertia",
+    bonificacion_porcentaje: 5.4,
+    precio_red_vertia: 1750.0,
+    stock_real: 25,
+    stock_comprometido: 5,
+    stock_disponible: 20,
+    stock_apartado_red: 15,
+    modo_disponible: "automatico",
+    cantidad_minima: 5,
+    cantidad_maxima: 60,
     publicado_en_red: true,
     almacen_id: "alm-centro-sucursal",
-    ubicacion_estanteria: "Sucursal Centro • Heavy Rack 01 • Nivel 1",
+    ubicacion_estanteria: "Heavy Rack 01 • Nivel 1",
   },
   {
-    id: "prod-centro-ladrillo",
+    id: "prod-centro-cemento-moctezuma",
     tenant_id: "tenant-materiales-centro",
-    codigo_barras: "7794443332220",
-    nombre: "Ladrillo Hueco 12x18x33 (Pallet x 144u)",
-    categoria: "Mampostería",
-    unidad_medida: "PAL",
-    precio: 95000.0,
-    stock_real: 40,           // Real: 40
-    stock_comprometido: 15,   // Comprometido: 15
-    stock_disponible: 25,     // Disponible: 25
-    cantidad_minima: 15,
-    cantidad_maxima: 120,
+    codigo_barras: "750999000102",
+    sku: "CEM-MOC-50",
+    nombre: "Cemento CPC 30R Moctezuma 50kg (Bolsa)",
+    categoria: "Cementos y Adhesivos",
+    unidad_medida: "BL",
+    precio: 240.0,
+    precio_mostrador: 240.0,
+    lista_precio_activa: "red_vertia",
+    bonificacion_porcentaje: 4.58,
+    precio_red_vertia: 229.0,
+    stock_real: 200,
+    stock_comprometido: 50,
+    stock_disponible: 150,
+    stock_apartado_red: 100,
+    modo_disponible: "automatico",
+    cantidad_minima: 40,
+    cantidad_maxima: 500,
     publicado_en_red: true,
     almacen_id: "alm-centro-sucursal",
-    ubicacion_estanteria: "Sucursal Centro • Patio Materiales • Fila 02",
-  },
-  {
-    id: "prod-centro-malla",
-    tenant_id: "tenant-materiales-centro",
-    codigo_barras: "7799988776655",
-    nombre: "Malla Electrosoldada Q188 15x15 (Paño 2.40x6m)",
-    categoria: "Hierros & Acero",
-    unidad_medida: "UN",
-    precio: 48000.0,
-    stock_real: 35,           // Real: 35
-    stock_comprometido: 15,   // Comprometido: 15
-    stock_disponible: 20,     // Disponible: 20
-    cantidad_minima: 10,
-    cantidad_maxima: 100,
-    publicado_en_red: true,
-    almacen_id: "alm-centro-sucursal",
-    ubicacion_estanteria: "Sucursal Centro • Heavy Rack 03 • Nivel 1",
+    ubicacion_estanteria: "Bahía 02",
   },
 ];
 
@@ -891,8 +995,8 @@ export const MOCK_ORDENES: MultiTenantOrden[] = [
     detalles: [
       {
         id: "det-pinos-1",
-        material: "Cemento Loma Negra 50kg (Bolsa)",
-        codigo: "7791234567890",
+        material: "Cemento Cruz Azul Gris 50kg (Bolsa)",
+        codigo: "750123450001",
         cantidadSolicitada: 100,
         cantidadDisponibleCorralon: 60,
         stockRealFisico: 120,
@@ -916,23 +1020,23 @@ export const MOCK_ORDENES: MultiTenantOrden[] = [
     detalles: [
       {
         id: "det-pinos-2",
-        material: "Cal Santa Elena Hidratada (Bolsa 25kg)",
-        codigo: "7793332221115",
+        material: "Cal Hidratada de Alta Pureza 25kg",
+        codigo: "750123450003",
         cantidadSolicitada: 30,
-        cantidadDisponibleCorralon: 50,
-        stockRealFisico: 80,
+        cantidadDisponibleCorralon: 45,
+        stockRealFisico: 90,
         cantidadAutorizadaExtension: 0,
         unidad: "BL",
         estadoItem: "Completo",
       },
       {
         id: "det-pinos-3",
-        material: "Arena Fina de Río (Bolsón 1m³)",
-        codigo: "7795556667771",
+        material: "Arena Lavada de Río (M3)",
+        codigo: "750123450004",
         cantidadSolicitada: 12,
-        cantidadDisponibleCorralon: 6,
-        stockRealFisico: 18,
-        cantidadAutorizadaExtension: 6,
+        cantidadDisponibleCorralon: 20,
+        stockRealFisico: 45,
+        cantidadAutorizadaExtension: 0,
         unidad: "M3",
         estadoItem: "Extensión requerida",
       },

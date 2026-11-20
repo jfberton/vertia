@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   Globe2,
   Search,
@@ -215,6 +216,29 @@ export default function RedB2BPage() {
         <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-[#071b3f] text-white text-xs font-bold shadow-2xl flex items-center gap-3 border border-indigo-400/40 animate-in slide-in-from-bottom-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMensaje}</span>
+        </div>
+      )}
+
+      {/* Banner Informativo de Unificación */}
+      {isCorralon && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <Boxes className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <span className="font-bold text-xs block text-amber-950">
+                Pestaña Unificada en &quot;Materiales y Stock&quot;
+              </span>
+              <span className="text-[11px] text-amber-800">
+                Ahora administras el catálogo completo, precios de mostrador, listas de precios, bonificaciones, stock físico vs. comprometido y publicación en la Red VERTIA en un solo lugar.
+              </span>
+            </div>
+          </div>
+          <Link href="/productos">
+            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shrink-0">
+              Ir a Materiales y Stock
+              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </Button>
+          </Link>
         </div>
       )}
 

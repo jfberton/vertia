@@ -88,7 +88,7 @@ export default function OrdenesPage() {
   const [nuevoFolio, setNuevoFolio] = useState(`VT-${Math.floor(1000 + Math.random() * 9000)}`);
   const [nuevoCliente, setNuevoCliente] = useState("");
   const [nuevoProyecto, setNuevoProyecto] = useState("");
-  const [nuevoMaterial, setNuevoMaterial] = useState("Cemento Loma Negra 50kg (Bolsa)");
+  const [nuevoMaterial, setNuevoMaterial] = useState("Cemento Cruz Azul Gris 50kg (Bolsa)");
   const [nuevaCantidad, setNuevaCantidad] = useState("50");
 
   // Effective tenant ID
@@ -970,11 +970,12 @@ export default function OrdenesPage() {
                     onChange={(e) => setNuevoMaterial(e.target.value)}
                     className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-xs"
                   >
-                    <option value="Cemento Loma Negra 50kg (Bolsa)">Cemento Loma Negra 50kg</option>
-                    <option value="Hierro Nervado Ø 10mm (Barra 12m)">Hierro Nervado Ø 10mm</option>
-                    <option value="Arena Fina de Río (Bolsón 1m³)">Arena Fina de Río</option>
-                    <option value="Cal Santa Elena Hidratada (Bolsa 25kg)">Cal Santa Elena Hidratada</option>
-                    <option value="Ladrillo Hueco 12x18x33 (Pallet x 144u)">Ladrillo Hueco 12x18x33</option>
+                    <option value="Cemento Cruz Azul Gris 50kg (Bolsa)">Cemento Cruz Azul Gris 50kg</option>
+                    <option value="Varilla Corrugada Grado 42 - 1/2 pulgada (Tramo 12m)">Varilla Corrugada 1/2 pulg</option>
+                    <option value="Cal Hidratada de Alta Pureza 25kg">Cal Hidratada 25kg</option>
+                    <option value="Arena Lavada de Río (M3)">Arena Lavada de Río (m³)</option>
+                    <option value="Grava Triturada 3/4 pulgada (M3)">Grava Triturada 3/4 pulg</option>
+                    <option value="Tabique Rojo Recocido (Millar)">Tabique Rojo Recocido</option>
                   </select>
                 </div>
                 <div>

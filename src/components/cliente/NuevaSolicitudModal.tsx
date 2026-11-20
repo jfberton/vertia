@@ -62,8 +62,8 @@ export function NuevaSolicitudModal({
   // Lista de renglones seleccionados
   const [items, setItems] = useState<ItemSolicitud[]>([
     {
-      material: materialesRed[0]?.nombre || "Cemento Loma Negra 50kg (Bolsa)",
-      codigo: materialesRed[0]?.codigo_barras || "7791234567890",
+      material: materialesRed[0]?.nombre || "Cemento Cruz Azul Gris 50kg (Bolsa)",
+      codigo: materialesRed[0]?.codigo_barras || "750123450001",
       cantidad: 50,
       unidad: materialesRed[0]?.unidad_medida || "BL",
     },
@@ -71,7 +71,7 @@ export function NuevaSolicitudModal({
 
   const calcularPrecioReferencia = (nombre: string) => {
     const prod = materialesRed.find((m) => m.nombre === nombre);
-    return prod ? prod.precio : 0;
+    return prod ? (prod.precio_red_vertia || prod.precio) : 0;
   };
 
   const totalEstimadoPreliminar = items.reduce((acc, it) => {
