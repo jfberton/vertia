@@ -9,7 +9,7 @@ import {
 } from "@/lib/data/mock-multi-tenant";
 
 export interface RegisterCompanyData {
-  tipoEmpresa: "corralon" | "servicios";
+  tipoEmpresa: "corralon" | "servicios" | "constructora";
   nombreEmpresa: string;
   cuitRfc: string;
   direccion: string;
@@ -243,8 +243,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: `usr-${Date.now()}`,
         email: data.emailAdmin.toLowerCase().trim(),
         nombre_completo: data.nombreAdmin,
-        cargo: `Administrador General (${data.nombreEmpresa})`,
-        rol: "administrador",
+        cargo: data.tipoEmpresa === "constructora" 
+          ? `Director de Obra (${data.nombreEmpresa})` 
+          : `Administrador General (${data.nombreEmpresa})`,
+        rol: data.tipoEmpresa === "constructora" ? "cliente" : "administrador",
         is_super_admin: false,
         tenant_id: newTenantId,
         tenant_nombre: data.nombreEmpresa,
