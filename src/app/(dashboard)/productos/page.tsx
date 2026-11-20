@@ -31,6 +31,11 @@ import {
   Save,
   HelpCircle,
   Package,
+  Settings,
+  MapPin,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ShieldAlert,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +57,10 @@ import {
 export default function ProductosPage() {
   const { user, tenant, allTenants } = useAuth();
   const isSuperAdmin = user?.is_super_admin ?? false;
-  const isAdminEmpresa =
+
+  // Verificación estricta de permisos de Administrador de Bodega / Corralón
+  const isAdminGalpon =
+    isSuperAdmin ||
     user?.rol === "administrador" ||
     Boolean(user?.cargo && user.cargo.toLowerCase().includes("administrador"));
 
@@ -77,11 +85,10 @@ export default function ProductosPage() {
     setProductos(list);
   }, [effectiveTenantId, isSuperAdmin]);
 
-  // Filtros
+  // Filtros de búsqueda
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("all");
   const [estadoRedFiltro, setEstadoRedFiltro] = useState<"todos" | "publicados" | "no_publicados" | "comprometidos">("todos");
-  const [listaFiltro, setListaFiltro] = useState<string>("all");
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
   const showNotification = (msg: string) => {
@@ -90,7 +97,119 @@ export default function ProductosPage() {
   };
 
   // ========================================================
-  // MODAL 1: REGISTRAR NUEVO MATERIAL
+  // POPUP UNIFICADO: ADMINISTRAR MATERIAL (FICHA INTEGRAL)
+  // ========================================================
+  const [modalAdminAbierto, setModalAdminAbierto] = useState(false);
+  const [prodSeleccionado, setProdSeleccionado] = useState<MultiTenantProducto | null>(null);
+
+  // Estado del formulario editable dentro del popup
+  const [formNombre, setFormNombre] = useState("");
+  const [formSku, setFormSku] = useState("");
+  const [formCategoria, setFormCategoria] = useState("");
+  const [formUnidad, setFormUnidad] = useState("BL");
+  const [formPrecioMostrador, setFormPrecioMostrador] = useState<number>(0);
+  const [formListaActiva, setFormListaActiva] = useState<TipoListaPrecio>("red_vertia");
+  const [formBonificacion, setFormBonificacion] = useState<number>(5.0);
+  const [formPrecioRed, setFormPrecioRed] = useState<number>(0);
+  const [formPublicadoRed, setFormPublicadoRed] = useState<boolean>(true);
+  const [formStockReal, setFormStockReal] = useState<number>(0);
+  const [formStockMinimo, setFormStockMinimo] = useState<number>(20);
+  const [formModoCupo, setFormModoCupo] = useState<"automatico" | "cupo_manual">("automatico");
+  const [formCupoManual, setFormCupoManual] = useState<number>(0);
+
+  const abrirAdministrarMaterial = (prod: MultiTenantProducto) => {
+    setProdSeleccionado(prod);
+    setFormNombre(prod.nombre);
+    setFormSku(prod.sku || prod.codigo_barras);
+    setFormCategoria(prod.categoria);
+    setFormUnidad(prod.unidad_medida);
+
+    const pMostrador = prod.precio_mostrador ?? prod.precio;
+    const lista = prod.lista_precio_activa || "red_vertia";
+    const bonif = prod.bonificacion_porcentaje ?? 5;
+    const pRed = prod.precio_red_vertia ?? Math.round(pMostrador * (1 - bonif / 100) * 100) / 100;
+
+    setFormPrecioMostrador(pMostrador);
+    setFormListaActiva(lista);
+    setFormBonificacion(bonif);
+    setFormPrecioRed(pRed);
+    setFormPublicadoRed(prod.publicado_en_red);
+    setFormStockReal(prod.stock_real);
+    setFormStockMinimo(prod.cantidad_minima || 20);
+    setFormModoCupo(prod.modo_disponible || "automatico");
+
+    const libre = Math.max(0, prod.stock_real - prod.stock_comprometido);
+    setFormCupoManual(prod.cupo_manual_red ?? prod.stock_apartado_red ?? libre);
+
+    setModalAdminAbierto(true);
+  };
+
+  const handleCambioPrecioMostrador = (val: number) => {
+    setFormPrecioMostrador(val);
+    if (formListaActiva === "red_vertia") {
+      setFormPrecioRed(Math.round(val * (1 - formBonificacion / 100) * 100) / 100);
+    } else if (formListaActiva === "contratista") {
+      setFormPrecioRed(Math.round(val * 0.96 * 100) / 100);
+    } else {
+      setFormPrecioRed(val);
+    }
+  };
+
+  const handleCambioBonificacion = (pct: number) => {
+    setFormBonificacion(pct);
+    setFormPrecioRed(Math.round(formPrecioMostrador * (1 - pct / 100) * 100) / 100);
+  };
+
+  const handleCambioPrecioRedDirecto = (val: number) => {
+    setFormPrecioRed(val);
+    if (formPrecioMostrador > 0) {
+      const calcPct = Math.round(((formPrecioMostrador - val) / formPrecioMostrador) * 1000) / 10;
+      setFormBonificacion(Math.max(0, calcPct));
+    }
+  };
+
+  const handleGuardarAdministracion = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prodSeleccionado) return;
+    if (!isAdminGalpon) {
+      showNotification("⚠️ Permisos insuficientes: Solo un Administrador de Galpón puede guardar cambios.");
+      return;
+    }
+
+    const libre = Math.max(0, formStockReal - prodSeleccionado.stock_comprometido);
+    const cupoFinal = formModoCupo === "cupo_manual" ? Math.min(Math.max(0, formCupoManual), libre) : libre;
+
+    const updates: Partial<MultiTenantProducto> = {
+      nombre: formNombre,
+      sku: formSku,
+      categoria: formCategoria,
+      unidad_medida: formUnidad,
+      precio: formPrecioMostrador,
+      precio_mostrador: formPrecioMostrador,
+      lista_precio_activa: formListaActiva,
+      bonificacion_porcentaje: formBonificacion,
+      precio_red_vertia: formPrecioRed,
+      publicado_en_red: formPublicadoRed,
+      stock_real: formStockReal,
+      stock_disponible: libre,
+      cantidad_minima: formStockMinimo,
+      modo_disponible: formModoCupo,
+      cupo_manual_red: formModoCupo === "cupo_manual" ? cupoFinal : undefined,
+      stock_apartado_red: formPublicadoRed ? cupoFinal : 0,
+    };
+
+    updateStoredProducto(prodSeleccionado.id, updates);
+    setProductos((prev) =>
+      prev.map((p) => (p.id === prodSeleccionado.id ? { ...p, ...updates } : p))
+    );
+
+    showNotification(`¡Material "${formNombre}" actualizado exitosamente!`);
+    setModalAdminAbierto(false);
+    setProdSeleccionado(null);
+  };
+
+  // ========================================================
+  // MODAL: REGISTRAR NUEVO MATERIAL
   // ========================================================
   const [modalNuevoAbierto, setModalNuevoAbierto] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
@@ -104,12 +223,11 @@ export default function ProductosPage() {
   const [nuevoStockReal, setNuevoStockReal] = useState("100");
   const [nuevoComprometido, setNuevoComprometido] = useState("0");
   const [nuevoMinimo, setNuevoMinimo] = useState("20");
-  const [nuevoUbicacion, setNuevoUbicacion] = useState("Pasillo A • Rack 01");
   const [nuevoPublicarRed, setNuevoPublicarRed] = useState(true);
 
   const handleCrearProducto = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSuperAdmin) return;
+    if (!isAdminGalpon) return;
     if (!nuevoNombre.trim()) return;
 
     const real = Number(nuevoStockReal) || 0;
@@ -145,7 +263,7 @@ export default function ProductosPage() {
       cantidad_maxima: real * 3,
       publicado_en_red: nuevoPublicarRed,
       almacen_id: targetTenant === "tenant-materiales-centro" ? "alm-centro-sucursal" : "alm-pinos-central",
-      ubicacion_estanteria: nuevoUbicacion || "Pasillo A • Rack 01",
+      ubicacion_estanteria: "Pasillo A • Rack 01",
     };
 
     saveStoredProducto(nuevoProd);
@@ -159,161 +277,14 @@ export default function ProductosPage() {
   };
 
   // ========================================================
-  // MODAL 2: GESTIÓN DE PRECIO, LISTA Y BONIFICACIÓN
-  // ========================================================
-  const [modalPrecioAbierto, setModalPrecioAbierto] = useState(false);
-  const [prodEditandoPrecio, setProdEditandoPrecio] = useState<MultiTenantProducto | null>(null);
-  const [editPrecioMostrador, setEditPrecioMostrador] = useState<number>(0);
-  const [editListaActiva, setEditListaActiva] = useState<TipoListaPrecio>("red_vertia");
-  const [editBonificacion, setEditBonificacion] = useState<number>(0);
-  const [editPrecioRed, setEditPrecioRed] = useState<number>(0);
-
-  const abrirModalPrecio = (prod: MultiTenantProducto) => {
-    if (isSuperAdmin) return;
-    setProdEditandoPrecio(prod);
-    const pMostrador = prod.precio_mostrador ?? prod.precio;
-    const lista = prod.lista_precio_activa || "red_vertia";
-    const bonif = prod.bonificacion_porcentaje ?? 5;
-    const pRed = prod.precio_red_vertia ?? Math.round(pMostrador * (1 - bonif / 100) * 100) / 100;
-
-    setEditPrecioMostrador(pMostrador);
-    setEditListaActiva(lista);
-    setEditBonificacion(bonif);
-    setEditPrecioRed(pRed);
-    setModalPrecioAbierto(true);
-  };
-
-  const handleCambioPrecioMostrador = (val: number) => {
-    setEditPrecioMostrador(val);
-    if (editListaActiva === "red_vertia") {
-      setEditPrecioRed(Math.round(val * (1 - editBonificacion / 100) * 100) / 100);
-    } else if (editListaActiva === "contratista") {
-      setEditPrecioRed(Math.round(val * 0.96 * 100) / 100);
-    } else {
-      setEditPrecioRed(val);
-    }
-  };
-
-  const handleCambioBonificacion = (pct: number) => {
-    setEditBonificacion(pct);
-    setEditPrecioRed(Math.round(editPrecioMostrador * (1 - pct / 100) * 100) / 100);
-  };
-
-  const handleCambioPrecioRedDirecto = (val: number) => {
-    setEditPrecioRed(val);
-    if (editPrecioMostrador > 0) {
-      const calcPct = Math.round(((editPrecioMostrador - val) / editPrecioMostrador) * 1000) / 10;
-      setEditBonificacion(Math.max(0, calcPct));
-    }
-  };
-
-  const handleGuardarPrecios = () => {
-    if (!prodEditandoPrecio) return;
-
-    const updates: Partial<MultiTenantProducto> = {
-      precio: editPrecioMostrador,
-      precio_mostrador: editPrecioMostrador,
-      lista_precio_activa: editListaActiva,
-      bonificacion_porcentaje: editBonificacion,
-      precio_red_vertia: editPrecioRed,
-    };
-
-    updateStoredProducto(prodEditandoPrecio.id, updates);
-    setProductos((prev) =>
-      prev.map((p) => (p.id === prodEditandoPrecio.id ? { ...p, ...updates } : p))
-    );
-
-    showNotification(
-      `Precios actualizados para "${prodEditandoPrecio.nombre}": Mostrador $${editPrecioMostrador.toFixed(
-        2
-      )} MXN | Red VERTIA $${editPrecioRed.toFixed(2)} MXN (${editBonificacion}% bonificación).`
-    );
-    setModalPrecioAbierto(false);
-    setProdEditandoPrecio(null);
-  };
-
-  // ========================================================
-  // MODAL 3: GESTIÓN DE STOCK & CUPO COMERCIAL RED
-  // ========================================================
-  const [modalStockAbierto, setModalStockAbierto] = useState(false);
-  const [prodEditandoStock, setProdEditandoStock] = useState<MultiTenantProducto | null>(null);
-  const [editStockReal, setEditStockReal] = useState<number>(0);
-  const [editModoCupo, setEditModoCupo] = useState<"automatico" | "cupo_manual">("automatico");
-  const [editValorCupo, setEditValorCupo] = useState<number>(0);
-  const [editPublicarRed, setEditPublicarRed] = useState<boolean>(true);
-
-  const abrirModalStock = (prod: MultiTenantProducto) => {
-    if (isSuperAdmin) return;
-    setProdEditandoStock(prod);
-    setEditStockReal(prod.stock_real);
-    setEditModoCupo(prod.modo_disponible || "automatico");
-    const libre = Math.max(0, prod.stock_real - prod.stock_comprometido);
-    setEditValorCupo(prod.stock_apartado_red ?? prod.cupo_manual_red ?? libre);
-    setEditPublicarRed(prod.publicado_en_red);
-    setModalStockAbierto(true);
-  };
-
-  const handleGuardarStockYCupo = () => {
-    if (!prodEditandoStock) return;
-
-    const libre = Math.max(0, editStockReal - prodEditandoStock.stock_comprometido);
-    const cupoFinal = editModoCupo === "cupo_manual" ? Math.min(Math.max(0, editValorCupo), libre) : libre;
-
-    const updates: Partial<MultiTenantProducto> = {
-      stock_real: editStockReal,
-      stock_disponible: libre,
-      modo_disponible: editModoCupo,
-      cupo_manual_red: editModoCupo === "cupo_manual" ? cupoFinal : undefined,
-      stock_apartado_red: editPublicarRed ? cupoFinal : 0,
-      publicado_en_red: editPublicarRed,
-    };
-
-    updateStoredProducto(prodEditandoStock.id, updates);
-    setProductos((prev) =>
-      prev.map((p) => (p.id === prodEditandoStock.id ? { ...p, ...updates } : p))
-    );
-
-    showNotification(
-      `Stock y cupo guardados para "${prodEditandoStock.nombre}": ${editStockReal} ${prodEditandoStock.unidad_medida} en bodega (${cupoFinal} apartados para Red VERTIA).`
-    );
-    setModalStockAbierto(false);
-    setProdEditandoStock(null);
-  };
-
-  // ========================================================
-  // TOGGLE RÁPIDO DE PUBLICACIÓN EN RED
-  // ========================================================
-  const togglePublicacionRed = (prod: MultiTenantProducto) => {
-    if (isSuperAdmin) return;
-    const nuevoEstado = !prod.publicado_en_red;
-    const libre = Math.max(0, prod.stock_real - prod.stock_comprometido);
-    const nuevoApartado = nuevoEstado ? (prod.stock_apartado_red && prod.stock_apartado_red > 0 ? prod.stock_apartado_red : libre) : 0;
-
-    const updates: Partial<MultiTenantProducto> = {
-      publicado_en_red: nuevoEstado,
-      stock_apartado_red: nuevoApartado,
-    };
-
-    updateStoredProducto(prod.id, updates);
-    setProductos((prev) =>
-      prev.map((p) => (p.id === prod.id ? { ...p, ...updates } : p))
-    );
-
-    showNotification(
-      nuevoEstado
-        ? `"${prod.nombre}" expuesto a la Red VERTIA ($${(prod.precio_red_vertia ?? prod.precio).toFixed(2)} MXN).`
-        : `"${prod.nombre}" pausado de la Red VERTIA (queda exclusivamente para venta de mostrador).`
-    );
-  };
-
-  // ========================================================
-  // MODAL 4: ADMINISTRADOR DE LISTAS DE PRECIOS & BONIFICACIONES
+  // MODAL: LISTAS DE PRECIOS & BONIFICACIONES MAESTRAS
   // ========================================================
   const [modalListasAbierto, setModalListasAbierto] = useState(false);
   const [bonifCategoria, setBonifCategoria] = useState("Cementos y Adhesivos");
   const [bonifPorcentajeMasivo, setBonifPorcentajeMasivo] = useState("5.0");
 
   const handleAplicarBonificacionMasiva = () => {
+    if (!isAdminGalpon) return;
     const pct = Number(bonifPorcentajeMasivo) || 0;
     if (pct < 0 || pct > 50) return;
 
@@ -346,30 +317,20 @@ export default function ProductosPage() {
   // ========================================================
   const productosFiltrados = useMemo(() => {
     return productos.filter((p) => {
-      // 1. Tenant Isolation
       if (effectiveTenantId !== "all" && p.tenant_id !== effectiveTenantId) {
         return false;
       }
 
-      // 2. Buscador
       const query = busqueda.toLowerCase().trim();
       const matchBusqueda =
         !query ||
         p.nombre.toLowerCase().includes(query) ||
         p.codigo_barras.includes(query) ||
         (p.sku && p.sku.toLowerCase().includes(query)) ||
-        p.categoria.toLowerCase().includes(query) ||
-        p.ubicacion_estanteria.toLowerCase().includes(query);
+        p.categoria.toLowerCase().includes(query);
 
-      // 3. Categoría
       const matchCategoria = categoriaFiltro === "all" || p.categoria === categoriaFiltro;
 
-      // 4. Lista de precio
-      const matchLista =
-        listaFiltro === "all" ||
-        (p.lista_precio_activa || "red_vertia") === listaFiltro;
-
-      // 5. Estado en Red
       let matchEstadoRed = true;
       if (estadoRedFiltro === "publicados") {
         matchEstadoRed = p.publicado_en_red;
@@ -379,13 +340,11 @@ export default function ProductosPage() {
         matchEstadoRed = p.stock_comprometido > 0 || p.stock_disponible <= p.cantidad_minima;
       }
 
-      return matchBusqueda && matchCategoria && matchLista && matchEstadoRed;
+      return matchBusqueda && matchCategoria && matchEstadoRed;
     });
-  }, [productos, effectiveTenantId, busqueda, categoriaFiltro, listaFiltro, estadoRedFiltro]);
+  }, [productos, effectiveTenantId, busqueda, categoriaFiltro, estadoRedFiltro]);
 
-  // ========================================================
-  // MÉTRICAS GLOBALES
-  // ========================================================
+  // Métricas globales
   const metricas = useMemo(() => {
     const list = effectiveTenantId === "all"
       ? productos
@@ -402,15 +361,6 @@ export default function ProductosPage() {
       (acc, p) => acc + p.stock_real * (p.precio_mostrador ?? p.precio),
       0
     );
-    const valorExpuestoRed = list
-      .filter((p) => p.publicado_en_red)
-      .reduce(
-        (acc, p) =>
-          acc +
-          (p.stock_apartado_red || p.stock_disponible) *
-            (p.precio_red_vertia ?? p.precio),
-        0
-      );
 
     return {
       totalSkus,
@@ -419,11 +369,9 @@ export default function ProductosPage() {
       totalApartadoRed,
       totalPublicados,
       valorInventario,
-      valorExpuestoRed,
     };
   }, [productos, effectiveTenantId]);
 
-  // Categorías únicas
   const categoriasDisponibles = useMemo(() => {
     const setCats = new Set<string>();
     productos.forEach((p) => {
@@ -440,7 +388,7 @@ export default function ProductosPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* ======================================================== */}
-      {/* 1. HEADER CORPORATIVO UNIFICADO                          */}
+      {/* 1. HEADER CORPORATIVO                                    */}
       {/* ======================================================== */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
@@ -453,24 +401,24 @@ export default function ProductosPage() {
                 Materiales y Stock
               </h1>
               <p className="text-xs text-slate-500">
-                Catálogo general de bodega, existencias físicas vs. comprometidas, listas de precios, bonificaciones y exposición a la Red VERTIA.
+                Catálogo general de bodega, existencias físicas, listas de precios, bonificaciones y exposición a la Red VERTIA.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Controles de Tenant y Botones Principales */}
+        {/* Tenant selector & Acciones */}
         <div className="flex flex-wrap items-center gap-2.5">
           {isSuperAdmin ? (
             <div className="flex items-center gap-2 bg-indigo-50/80 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs shadow-2xs">
               <Building2 className="w-4 h-4 text-indigo-700 shrink-0" />
-              <span className="font-semibold text-indigo-900">Corralón:</span>
+              <span className="font-semibold text-indigo-900">Bodega:</span>
               <select
                 value={superAdminTenantFilter}
                 onChange={(e) => setSuperAdminTenantFilter(e.target.value)}
                 className="bg-white border border-indigo-200 rounded px-2.5 py-1 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="all">🌐 Vista Consolidada (Todos los Corralones)</option>
+                <option value="all">🌐 Vista Consolidada (Todas las Bodegas)</option>
                 {allTenants.map((t) => (
                   <option key={t.id} value={t.id}>
                     🏢 {t.nombre}
@@ -482,15 +430,15 @@ export default function ProductosPage() {
             <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-xs text-slate-700">
               <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
               <span>
-                Bodega: <strong className="text-slate-900">{tenant?.nombre || user?.tenant_nombre || "Corralón Asignado"}</strong>
+                Bodega: <strong className="text-slate-900">{tenant?.nombre || user?.tenant_nombre || "Bodega Central"}</strong>
               </span>
               <span className="text-[10px] bg-indigo-100 text-indigo-800 font-semibold px-2 py-0.5 rounded-full">
-                Aislamiento Activo
+                {isAdminGalpon ? "Administrador" : "Consulta"}
               </span>
             </div>
           )}
 
-          {!isSuperAdmin && (
+          {isAdminGalpon && (
             <>
               <Button
                 variant="outline"
@@ -513,25 +461,6 @@ export default function ProductosPage() {
         </div>
       </div>
 
-      {/* Banner de Confidencialidad / Privacidad */}
-      <div className="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3 text-xs text-slate-600 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-indigo-100 text-indigo-700 shrink-0">
-            <Lock className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="font-bold text-slate-800 block">Privacidad y Control Total de tu Negocio</span>
-            <span className="text-[11px] text-slate-500">
-              Tus competidores no tienen acceso a tu inventario ni a tus listas de precios. Aquí administras tu stock físico, con qué lista o bonificación expones stock a la Red VERTIA y qué productos mantienes exclusivamente para mostrador.
-            </span>
-          </div>
-        </div>
-        <div className="hidden lg:flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded bg-white border border-indigo-200 text-[11px] font-semibold text-indigo-700">
-          <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-          <span>Garantía Escrow 100%</span>
-        </div>
-      </div>
-
       {/* Notificación Toast */}
       {mensajeExito && (
         <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 animate-in fade-in shadow-2xs">
@@ -541,12 +470,12 @@ export default function ProductosPage() {
       )}
 
       {/* ======================================================== */}
-      {/* 2. TARJETAS DE MÉTRICAS OPERATIVAS & FINANCIERAS         */}
+      {/* 2. TARJETAS DE RESUMEN OPERATIVO                         */}
       {/* ======================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="p-3.5 bg-white border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Catálogo Activo</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Catálogo de Materiales</span>
             <Package className="w-4 h-4 text-indigo-600" />
           </div>
           <div className="flex items-baseline gap-2">
@@ -555,22 +484,22 @@ export default function ProductosPage() {
           </div>
           <div className="mt-1 text-[11px] text-emerald-600 font-medium flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
-            <span>{metricas.totalPublicados} materiales expuestos en Red</span>
+            <span>{metricas.totalPublicados} expuestos en Red VERTIA</span>
           </div>
         </Card>
 
         <Card className="p-3.5 bg-white border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Stock Físico Real</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Stock Físico Bodega</span>
             <Warehouse className="w-4 h-4 text-slate-600" />
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-black text-slate-900">{metricas.totalFisico}</span>
-            <span className="text-xs text-slate-500 font-medium">unidades en bodega</span>
+            <span className="text-xs text-slate-500 font-medium">unidades contadas</span>
           </div>
           <div className="mt-1 text-[11px] text-amber-700 font-medium flex items-center gap-1">
             <AlertTriangle className="w-3 h-3 text-amber-600" />
-            <span>{metricas.totalComprometido} unidades comprometidas en obras</span>
+            <span>{metricas.totalComprometido} unidades en órdenes activas</span>
           </div>
         </Card>
 
@@ -599,17 +528,17 @@ export default function ProductosPage() {
             </span>
             <span className="text-xs text-emerald-700 font-bold">MXN</span>
           </div>
-          <div className="mt-1 text-[11px] text-emerald-700 font-medium truncate">
-            ${metricas.valorExpuestoRed.toLocaleString("es-MX", { minimumFractionDigits: 0 })} MXN expuesto a red
+          <div className="mt-1 text-[11px] text-emerald-700 font-medium">
+            Valuación a precio de lista mostrador
           </div>
         </Card>
       </div>
 
       {/* ======================================================== */}
-      {/* 3. FILTROS Y PESTAÑAS DE VISTA RÁPIDA                    */}
+      {/* 3. FILTROS Y BÚSQUEDA RÁPIDA                             */}
       {/* ======================================================== */}
       <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
-        {/* Pestañas de estado rápido */}
+        {/* Pestañas de estado */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
           <div className="flex items-center gap-1.5">
             <button
@@ -665,86 +594,65 @@ export default function ProductosPage() {
           </div>
         </div>
 
-        {/* Barra de Búsqueda y Dropdowns */}
+        {/* Buscador y Categorías */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-96">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar por material, SKU, código de barras o pasillo..."
+              placeholder="Buscar por material, SKU o código de barras..."
               className="pl-9 h-9 text-xs border-slate-200"
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            {/* Categorías */}
-            <div className="flex items-center gap-1.5">
-              <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <select
-                value={categoriaFiltro}
-                onChange={(e) => setCategoriaFiltro(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:ring-1 focus:ring-indigo-500"
-              >
-                <option value="all">Todas las Categorías</option>
-                {categoriasDisponibles.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Listas de Precios */}
+          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+            <Filter className="w-3.5 h-3.5 text-slate-400" />
             <select
-              value={listaFiltro}
-              onChange={(e) => setListaFiltro(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:ring-1 focus:ring-indigo-500"
+              value={categoriaFiltro}
+              onChange={(e) => setCategoriaFiltro(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:ring-1 focus:ring-indigo-500 w-full sm:w-auto"
             >
-              <option value="all">Todas las Listas</option>
-              <option value="red_vertia">Lista Red VERTIA</option>
-              <option value="contratista">Lista Contratistas</option>
-              <option value="mostrador">Lista Mostrador Base</option>
+              <option value="all">Todas las Categorías</option>
+              {categoriasDisponibles.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
         </div>
       </div>
 
       {/* ======================================================== */}
-      {/* 4. TABLA UNIFICADA DE MATERIALES, PRECIOS Y STOCK        */}
+      {/* 4. TABLA SIMPLIFICADA Y LEGIBLE (COLUMNAS ESENCIALES)    */}
       {/* ======================================================== */}
       <Card className="bg-white border-slate-200 shadow-xs overflow-hidden rounded-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-4">Material / SKU</th>
+                <th className="py-3 px-4">Material / Insumo</th>
                 {isSuperAdmin && effectiveTenantId === "all" && (
                   <th className="py-3 px-3">Bodega</th>
                 )}
-                <th className="py-3 px-3">Ubicación Bodega</th>
-                <th className="py-3 px-3 text-center bg-slate-100/60 font-black text-slate-800">
+                <th className="py-3 px-4 text-center bg-slate-100/60 font-black text-slate-800">
                   Físico Real
                 </th>
-                <th className="py-3 px-3 text-center text-amber-700">Comprometido</th>
-                <th className="py-3 px-3 text-center bg-emerald-50/50 font-bold text-emerald-800">
-                  Disp. Mostrador
+                <th className="py-3 px-4 text-center text-amber-700">Comprometido</th>
+                <th className="py-3 px-4 text-center bg-emerald-50/50 font-bold text-emerald-800">
+                  Disponible
                 </th>
-                <th className="py-3 px-3 text-center bg-indigo-50/50 font-bold text-indigo-900">
-                  Apartado Red
-                </th>
-                <th className="py-3 px-3 text-right">Precio Mostrador</th>
-                <th className="py-3 px-3 text-center">Lista / Bonif.</th>
-                <th className="py-3 px-3 text-right font-black text-indigo-700">Precio Red VERTIA</th>
-                <th className="py-3 px-3 text-center">Estado Red</th>
-                {!isSuperAdmin && <th className="py-3 px-4 text-center">Acciones</th>}
+                <th className="py-3 px-4 text-right">Precio Base ($ MXN)</th>
+                <th className="py-3 px-4 text-center">Estado Red VERTIA</th>
+                <th className="py-3 px-4 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {productosFiltrados.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isSuperAdmin && effectiveTenantId === "all" ? 12 : 11}
+                    colSpan={isSuperAdmin && effectiveTenantId === "all" ? 8 : 7}
                     className="py-12 text-center text-slate-400"
                   >
                     No se encontraron materiales que coincidan con los filtros aplicados.
@@ -756,25 +664,26 @@ export default function ProductosPage() {
                   const bonif = p.bonificacion_porcentaje ?? (p.lista_precio_activa === "red_vertia" ? 5 : 0);
                   const pRed = p.precio_red_vertia ?? Math.round(pMostrador * (1 - bonif / 100) * 100) / 100;
                   const stockCritico = p.stock_disponible <= p.cantidad_minima;
-                  const apartadoRed = p.stock_apartado_red ?? (p.publicado_en_red ? p.stock_disponible : 0);
 
                   return (
                     <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                      {/* Material / SKU */}
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900">{p.nombre}</div>
+                      {/* Material / SKU / Rubro */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900 text-xs">{p.nombre}</div>
                         <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
-                          <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded">
+                          <span className="font-mono bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-semibold">
                             {p.sku || p.codigo_barras}
                           </span>
                           <span>•</span>
                           <span>{p.categoria}</span>
+                          <span>•</span>
+                          <span className="font-semibold text-slate-600">{p.unidad_medida}</span>
                         </div>
                       </td>
 
                       {/* Corralón (Super Admin) */}
                       {isSuperAdmin && effectiveTenantId === "all" && (
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-3">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 font-medium text-[11px]">
                             <Building2 className="w-3 h-3" />
                             {getTenantName(p.tenant_id)}
@@ -782,141 +691,93 @@ export default function ProductosPage() {
                         </td>
                       )}
 
-                      {/* Ubicación Bodega */}
-                      <td className="py-3 px-3 text-[11px] text-slate-600">
-                        <div className="flex items-center gap-1">
-                          <Warehouse className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="font-medium truncate">{p.ubicacion_estanteria}</span>
-                        </div>
-                      </td>
-
-                      {/* Stock Físico Real */}
-                      <td className="py-3 px-3 text-center bg-slate-50/60">
-                        <span className="font-extrabold text-slate-900 text-sm">
+                      {/* Físico Real */}
+                      <td className="py-3.5 px-4 text-center bg-slate-50/60">
+                        <span className="font-black text-slate-900 text-sm">
                           {p.stock_real}
                         </span>{" "}
                         <span className="text-[10px] text-slate-500 font-bold">{p.unidad_medida}</span>
                       </td>
 
-                      {/* Stock Comprometido */}
-                      <td className="py-3 px-3 text-center">
+                      {/* Comprometido */}
+                      <td className="py-3.5 px-4 text-center">
                         <span className="font-bold text-amber-600 text-xs">
                           {p.stock_comprometido}
                         </span>{" "}
                         <span className="text-[10px] text-amber-700/70">{p.unidad_medida}</span>
                       </td>
 
-                      {/* Disponible Mostrador */}
-                      <td className="py-3 px-3 text-center bg-emerald-50/30">
-                        <span
-                          className={`font-black text-xs ${
-                            stockCritico ? "text-amber-600" : "text-emerald-700"
+                      {/* Disponible */}
+                      <td className="py-3.5 px-4 text-center bg-emerald-50/30">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span
+                            className={`font-black text-sm ${
+                              stockCritico ? "text-amber-600" : "text-emerald-700"
+                            }`}
+                          >
+                            {p.stock_disponible}
+                          </span>{" "}
+                          <span className="text-[10px] text-emerald-800/70">{p.unidad_medida}</span>
+                          {stockCritico && (
+                            <span title="Stock por debajo del mínimo de seguridad">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Precio Base Mostrador */}
+                      <td className="py-3.5 px-4 text-right">
+                        <span className="font-bold text-slate-900 text-xs">
+                          ${pMostrador.toFixed(2)}
+                        </span>{" "}
+                        <span className="text-[10px] text-slate-400">MXN</span>
+                      </td>
+
+                      {/* Estado Red VERTIA */}
+                      <td className="py-3.5 px-4 text-center">
+                        {p.publicado_en_red ? (
+                          <div className="inline-flex flex-col items-center">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300/60">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                              <span>Expuesto en Red</span>
+                            </span>
+                            <span className="text-[10px] text-indigo-700 font-bold mt-0.5">
+                              ${pRed.toFixed(2)} MXN (-{bonif}%)
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                            <Lock className="w-2.5 h-2.5 text-slate-400" />
+                            <span>Solo Mostrador</span>
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Botón Administrar Material */}
+                      <td className="py-3.5 px-4 text-center">
+                        <Button
+                          size="sm"
+                          onClick={() => abrirAdministrarMaterial(p)}
+                          className={`h-8 px-3 text-xs font-semibold shadow-2xs transition-all ${
+                            isAdminGalpon
+                              ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                              : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
                           }`}
                         >
-                          {p.stock_disponible}
-                        </span>{" "}
-                        <span className="text-[10px] text-emerald-800/70">{p.unidad_medida}</span>
+                          {isAdminGalpon ? (
+                            <>
+                              <Settings className="w-3.5 h-3.5 mr-1.5" />
+                              Administrar Material
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                              Ver Ficha Detallada
+                            </>
+                          )}
+                        </Button>
                       </td>
-
-                      {/* Apartado Red VERTIA */}
-                      <td className="py-3 px-3 text-center bg-indigo-50/30">
-                        {p.publicado_en_red ? (
-                          <div className="flex flex-col items-center">
-                            <span className="font-black text-xs text-indigo-700">
-                              {apartadoRed} {p.unidad_medida}
-                            </span>
-                            <span className="text-[9px] text-indigo-500 font-semibold">
-                              {p.modo_disponible === "cupo_manual" ? "Cupo Manual" : "100% Auto"}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 font-semibold italic">0 (Pausado)</span>
-                        )}
-                      </td>
-
-                      {/* Precio Mostrador */}
-                      <td className="py-3 px-3 text-right font-medium text-slate-600">
-                        ${pMostrador.toFixed(2)} <span className="text-[10px] text-slate-400">MXN</span>
-                      </td>
-
-                      {/* Lista / Bonificación */}
-                      <td className="py-3 px-3 text-center">
-                        {p.lista_precio_activa === "red_vertia" ? (
-                          <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px] font-bold">
-                            Red VERTIA (-{bonif}%)
-                          </Badge>
-                        ) : p.lista_precio_activa === "contratista" ? (
-                          <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-bold">
-                            Contratista (-{bonif}%)
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-slate-100 text-slate-600 border-slate-200 text-[10px] font-medium">
-                            Mostrador (0%)
-                          </Badge>
-                        )}
-                      </td>
-
-                      {/* Precio Red VERTIA */}
-                      <td className="py-3 px-3 text-right">
-                        <div className="font-black text-sm text-indigo-900">
-                          ${pRed.toFixed(2)}
-                        </div>
-                        <span className="text-[9px] text-indigo-500 block">MXN p/ cotización</span>
-                      </td>
-
-                      {/* Estado Red (Toggle / Badge) */}
-                      <td className="py-3 px-3 text-center">
-                        {p.publicado_en_red ? (
-                          <button
-                            onClick={() => togglePublicacionRed(p)}
-                            disabled={isSuperAdmin}
-                            title="Haga clic para pausar este material de la Red VERTIA"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors border border-emerald-300/60"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                            <span>Expuesto en Red</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => togglePublicacionRed(p)}
-                            disabled={isSuperAdmin}
-                            title="Haga clic para exponer este material a la Red VERTIA"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors border border-slate-200"
-                          >
-                            <EyeOff className="w-3 h-3 text-slate-400" />
-                            <span>Solo Mostrador</span>
-                          </button>
-                        )}
-                      </td>
-
-                      {/* Acciones */}
-                      {!isSuperAdmin && (
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => abrirModalPrecio(p)}
-                              className="h-7 px-2 text-[11px] font-semibold text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-indigo-600"
-                              title="Configurar precio base mostrador, lista activa y bonificación"
-                            >
-                              <Edit2 className="w-3 h-3 mr-1 text-slate-400" />
-                              Precios
-                            </Button>
-
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => abrirModalStock(p)}
-                              className="h-7 px-2 text-[11px] font-semibold text-indigo-700 border-indigo-200 bg-indigo-50/30 hover:bg-indigo-100"
-                              title="Ajustar stock físico y cupo asignado a la Red VERTIA"
-                            >
-                              <SlidersHorizontal className="w-3 h-3 mr-1 text-indigo-500" />
-                              Stock / Cupo
-                            </Button>
-                          </div>
-                        </td>
-                      )}
                     </tr>
                   );
                 })
@@ -927,313 +788,357 @@ export default function ProductosPage() {
       </Card>
 
       {/* ======================================================== */}
-      {/* MODAL: EDITAR PRECIO, LISTA Y BONIFICACIÓN               */}
+      {/* 5. POPUP UNIFICADO: ADMINISTRAR MATERIAL (FICHA COMPLETA) */}
       {/* ======================================================== */}
-      {modalPrecioAbierto && prodEditandoPrecio && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <Card className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl border-slate-200 animate-in fade-in-50 zoom-in-95 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
-                  <Tag className="w-4 h-4" />
+      {modalAdminAbierto && prodSeleccionado && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <Card className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border-slate-200 animate-in fade-in-50 zoom-in-95 my-8 overflow-hidden">
+            {/* Cabecera del Popup */}
+            <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-indigo-100 text-indigo-700">
+                  <Package className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm">
-                    Precios, Lista & Bonificación
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    {prodEditandoPrecio.nombre} ({prodEditandoPrecio.sku || prodEditandoPrecio.codigo_barras})
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-black text-slate-900 text-base">
+                      {isAdminGalpon ? "Administrar Material" : "Ficha Técnica del Material"}
+                    </h2>
+                    {isAdminGalpon ? (
+                      <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200 text-[10px] font-bold">
+                        Modo Administrador
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] text-slate-600 font-bold bg-white">
+                        Solo Lectura (Consulta)
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {prodSeleccionado.nombre} • SKU: <span className="font-mono text-slate-700 font-bold">{prodSeleccionado.sku || prodSeleccionado.codigo_barras}</span>
                   </p>
                 </div>
               </div>
+
               <button
-                onClick={() => setModalPrecioAbierto(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                onClick={() => setModalAdminAbierto(false)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs">
-              {/* Precio Mostrador Base */}
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  1. Precio Regular Mostrador ($ MXN)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400">$</span>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    value={editPrecioMostrador}
-                    onChange={(e) => handleCambioPrecioMostrador(Number(e.target.value) || 0)}
-                    className="pl-7 font-bold text-slate-800 text-sm"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">
-                    MXN / {prodEditandoPrecio.unidad_medida}
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Precio de venta al público en el mostrador del corralón.
-                </p>
-              </div>
-
-              {/* Selector de Lista de Precio */}
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  2. Lista de Precio Asignada para Cotizaciones de Red
-                </label>
-                <select
-                  value={editListaActiva}
-                  onChange={(e) => {
-                    const nueva = e.target.value as TipoListaPrecio;
-                    setEditListaActiva(nueva);
-                    if (nueva === "mostrador") {
-                      setEditBonificacion(0);
-                      setEditPrecioRed(editPrecioMostrador);
-                    } else if (nueva === "contratista") {
-                      setEditBonificacion(4.0);
-                      setEditPrecioRed(Math.round(editPrecioMostrador * 0.96 * 100) / 100);
-                    } else {
-                      setEditBonificacion(5.0);
-                      setEditPrecioRed(Math.round(editPrecioMostrador * 0.95 * 100) / 100);
-                    }
-                  }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold text-slate-800"
-                >
-                  <option value="red_vertia">🌐 Lista Red VERTIA (Precio preferencial con 100% Escrow)</option>
-                  <option value="contratista">👷 Lista Contratistas & Obra Frecuente</option>
-                  <option value="mostrador">🏪 Lista Mostrador Base (Sin bonificación)</option>
-                </select>
-              </div>
-
-              {/* Bonificación y Precio Red VERTIA */}
-              <div className="p-3.5 bg-indigo-50/60 rounded-xl border border-indigo-100 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-indigo-900 flex items-center gap-1">
-                    <Percent className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Bonificación / Descuento a la Red (%)</span>
-                  </label>
-                  <div className="flex items-center gap-1">
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="50"
-                      value={editBonificacion}
-                      onChange={(e) => handleCambioBonificacion(Number(e.target.value) || 0)}
-                      className="w-20 h-7 text-xs font-black text-right pr-2 bg-white"
-                    />
-                    <span className="font-bold text-indigo-700">%</span>
-                  </div>
-                </div>
-
-                <div className="border-t border-indigo-100 pt-2 flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-indigo-950 block">
-                      Precio Neto Resultante Red VERTIA:
-                    </span>
-                    <span className="text-[10px] text-indigo-600">
-                      Importe exacto al que el sistema cotizará este SKU a constructoras.
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-bold text-indigo-600">$</span>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      value={editPrecioRed}
-                      onChange={(e) => handleCambioPrecioRedDirecto(Number(e.target.value) || 0)}
-                      className="w-28 pl-6 h-8 text-sm font-black text-indigo-900 bg-white border-indigo-300"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Resumen comparativo */}
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-[11px] flex items-center justify-between">
-                <span className="text-slate-500">Diferencial vs Mostrador:</span>
-                <span className="font-bold text-emerald-700">
-                  -${(editPrecioMostrador - editPrecioRed).toFixed(2)} MXN por {prodEditandoPrecio.unidad_medida} (
-                  {editBonificacion}%)
+            {/* Aviso de permisos si no es admin */}
+            {!isAdminGalpon && (
+              <div className="bg-amber-50 border-b border-amber-200 px-5 py-2 text-xs text-amber-800 flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>
+                  Has ingresado en <strong>Modo Consulta</strong>. Como no posees rol de Administrador de Galpón, solo puedes visualizar los valores configurados sin alterarlos.
                 </span>
               </div>
-            </div>
+            )}
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-              <Button
-                variant="outline"
-                onClick={() => setModalPrecioAbierto(false)}
-                className="text-xs"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleGuardarPrecios}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
-              >
-                <Save className="w-3.5 h-3.5 mr-1.5" />
-                Guardar Precios & Lista
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* ======================================================== */}
-      {/* MODAL: AJUSTE DE STOCK & CUPO COMERCIAL RED             */}
-      {/* ======================================================== */}
-      {modalStockAbierto && prodEditandoStock && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <Card className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl border-slate-200 animate-in fade-in-50 zoom-in-95 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
-                  <SlidersHorizontal className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm">
-                    Stock Físico & Cupo de Red VERTIA
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    {prodEditandoStock.nombre} ({prodEditandoStock.unidad_medida})
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setModalStockAbierto(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              {/* Existencia Física Real */}
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Existencia Física Real en Bodega
-                </label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    value={editStockReal}
-                    onChange={(e) => setEditStockReal(Number(e.target.value) || 0)}
-                    className="font-black text-slate-900 text-sm"
-                  />
-                  <span className="font-bold text-slate-500 uppercase">{prodEditandoStock.unidad_medida}</span>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
-                  <span>Comprometido en órdenes: <strong>{prodEditandoStock.stock_comprometido} {prodEditandoStock.unidad_medida}</strong></span>
-                  <span>Saldo libre disponible: <strong>{Math.max(0, editStockReal - prodEditandoStock.stock_comprometido)} {prodEditandoStock.unidad_medida}</strong></span>
-                </div>
-              </div>
-
-              {/* Modo de Exposición de Cupo */}
-              <div className="space-y-2 border-t border-slate-100 pt-3">
-                <label className="font-bold text-slate-800 block">
-                  Modo de Asignación de Cupo para la Red VERTIA
-                </label>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditModoCupo("automatico");
-                      setEditValorCupo(Math.max(0, editStockReal - prodEditandoStock.stock_comprometido));
-                    }}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      editModoCupo === "automatico"
-                        ? "border-indigo-600 bg-indigo-50/70 text-indigo-900 ring-2 ring-indigo-500/20"
-                        : "border-slate-200 hover:bg-slate-50 text-slate-700"
-                    }`}
-                  >
-                    <div className="font-bold text-xs flex items-center justify-between mb-1">
-                      <span>100% Automático</span>
-                      {editModoCupo === "automatico" && <Check className="w-3.5 h-3.5 text-indigo-600" />}
-                    </div>
-                    <p className="text-[10px] text-slate-500">
-                      Ofrece a la red todo el stock disponible (Real - Comprometido).
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setEditModoCupo("cupo_manual")}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      editModoCupo === "cupo_manual"
-                        ? "border-indigo-600 bg-indigo-50/70 text-indigo-900 ring-2 ring-indigo-500/20"
-                        : "border-slate-200 hover:bg-slate-50 text-slate-700"
-                    }`}
-                  >
-                    <div className="font-bold text-xs flex items-center justify-between mb-1">
-                      <span>Cupo Manual Fijo</span>
-                      {editModoCupo === "cupo_manual" && <Check className="w-3.5 h-3.5 text-indigo-600" />}
-                    </div>
-                    <p className="text-[10px] text-slate-500">
-                      Limita un número máximo de bultos apartados para cotización.
-                    </p>
-                  </button>
-                </div>
-
-                {editModoCupo === "cupo_manual" && (
-                  <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-1.5 mt-2">
-                    <label className="font-bold text-indigo-900 text-xs block">
-                      Cantidad Apartada Fija para Red VERTIA ({prodEditandoStock.unidad_medida}):
-                    </label>
-                    <Input
-                      type="number"
-                      max={Math.max(0, editStockReal - prodEditandoStock.stock_comprometido)}
-                      value={editValorCupo}
-                      onChange={(e) => setEditValorCupo(Number(e.target.value) || 0)}
-                      className="font-bold text-sm bg-white"
+            {/* Formulario / Contenido de la Ficha */}
+            <form onSubmit={handleGuardarAdministracion} className="p-6 space-y-6 text-xs max-h-[75vh] overflow-y-auto">
+              {/* BLOQUE 1: EXPOSICIÓN A LA RED VERTIA */}
+              <div className="p-4 rounded-xl border border-indigo-100 bg-indigo-50/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Share2 className="w-4 h-4 text-indigo-600" />
+                    <span className="font-bold text-slate-900 text-sm">Exposición en Red VERTIA</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      disabled={!isAdminGalpon}
+                      checked={formPublicadoRed}
+                      onChange={(e) => setFormPublicadoRed(e.target.checked)}
+                      className="sr-only peer"
                     />
-                    <p className="text-[10px] text-slate-500">
-                      Máximo asignable sin afectar compromisos: {Math.max(0, editStockReal - prodEditandoStock.stock_comprometido)} {prodEditandoStock.unidad_medida}.
-                    </p>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+
+                <p className="text-[11px] text-slate-600">
+                  {formPublicadoRed
+                    ? "Este material está publicado y disponible para el ruteo automático de pedidos de obras y constructoras a través de VERTIA con cobro asegurado 100% Escrow."
+                    : "Pausado: Este material se mantiene exclusivamente para venta presencial en el mostrador de tu bodega (no cotiza en la red)."
+                  }
+                </p>
+
+                {formPublicadoRed && (
+                  <div className="pt-2 border-t border-indigo-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">Modo de Asignación de Cupo</label>
+                      <select
+                        disabled={!isAdminGalpon}
+                        value={formModoCupo}
+                        onChange={(e) => setFormModoCupo(e.target.value as "automatico" | "cupo_manual")}
+                        className="w-full bg-white border border-slate-200 rounded p-1.5 text-xs font-semibold text-slate-800 disabled:bg-slate-100"
+                      >
+                        <option value="automatico">100% Automático (Todo el saldo libre)</option>
+                        <option value="cupo_manual">Cupo Manual Fijo (Tope máximo)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">
+                        Apartado para Red VERTIA ({formUnidad})
+                      </label>
+                      <Input
+                        type="number"
+                        disabled={!isAdminGalpon || formModoCupo === "automatico"}
+                        value={formModoCupo === "automatico" ? Math.max(0, formStockReal - prodSeleccionado.stock_comprometido) : formCupoManual}
+                        onChange={(e) => setFormCupoManual(Number(e.target.value) || 0)}
+                        className="h-8 text-xs font-bold bg-white"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Toggle Publicar en Red */}
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <div>
-                  <span className="font-bold text-slate-800 block text-xs">Exponer a la Red VERTIA</span>
-                  <span className="text-[10px] text-slate-500">
-                    Si se desactiva, el producto permanecerá solo para venta de mostrador.
-                  </span>
+              {/* BLOQUE 2: PRECIOS, LISTAS & BONIFICACIONES */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <Tag className="w-4 h-4 text-indigo-600" />
+                  <span className="font-bold text-slate-900 text-sm">Esquema de Precios y Listas</span>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={editPublicarRed}
-                  onChange={(e) => setEditPublicarRed(e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-              <Button
-                variant="outline"
-                onClick={() => setModalStockAbierto(false)}
-                className="text-xs"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleGuardarStockYCupo}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
-              >
-                <Save className="w-3.5 h-3.5 mr-1.5" />
-                Actualizar Stock & Cupo
-              </Button>
-            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      1. Precio Regular Mostrador ($ MXN)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">$</span>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        disabled={!isAdminGalpon}
+                        value={formPrecioMostrador}
+                        onChange={(e) => handleCambioPrecioMostrador(Number(e.target.value) || 0)}
+                        className="pl-6 h-8 text-xs font-black text-slate-900 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      2. Lista Asignada para Red
+                    </label>
+                    <select
+                      disabled={!isAdminGalpon}
+                      value={formListaActiva}
+                      onChange={(e) => {
+                        const lista = e.target.value as TipoListaPrecio;
+                        setFormListaActiva(lista);
+                        if (lista === "mostrador") {
+                          setFormBonificacion(0);
+                          setFormPrecioRed(formPrecioMostrador);
+                        } else if (lista === "contratista") {
+                          setFormBonificacion(4.0);
+                          setFormPrecioRed(Math.round(formPrecioMostrador * 0.96 * 100) / 100);
+                        } else {
+                          setFormBonificacion(5.0);
+                          setFormPrecioRed(Math.round(formPrecioMostrador * 0.95 * 100) / 100);
+                        }
+                      }}
+                      className="w-full h-8 bg-white border border-slate-200 rounded px-2 text-xs font-semibold text-slate-800 disabled:bg-slate-100"
+                    >
+                      <option value="red_vertia">Lista Red VERTIA (Precio preferencial Escrow)</option>
+                      <option value="contratista">Lista Contratistas & Obra (~4%)</option>
+                      <option value="mostrador">Lista Mostrador Base (0%)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      3. Bonificación / Descuento Red (%)
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="50"
+                        disabled={!isAdminGalpon}
+                        value={formBonificacion}
+                        onChange={(e) => handleCambioBonificacion(Number(e.target.value) || 0)}
+                        className="h-8 text-xs font-bold text-right pr-2 bg-white"
+                      />
+                      <span className="font-bold text-slate-600">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Precio Neto Red VERTIA */}
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-indigo-950 text-xs block">
+                      Precio Neto Cotizado en Red VERTIA ($ MXN):
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      Importe oficial que se liquida a la cuenta del corralón al entregar en obra.
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-indigo-600 text-sm">$</span>
+                    <Input
+                      type="number"
+                      step="0.5"
+                      disabled={!isAdminGalpon}
+                      value={formPrecioRed}
+                      onChange={(e) => handleCambioPrecioRedDirecto(Number(e.target.value) || 0)}
+                      className="w-28 h-8 font-black text-sm text-indigo-900 bg-white border-indigo-200 text-right pr-2"
+                    />
+                    <span className="text-[10px] font-bold text-slate-400">MXN</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOQUE 3: CONTROL DE STOCK & UMBRALES */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <Warehouse className="w-4 h-4 text-indigo-600" />
+                  <span className="font-bold text-slate-900 text-sm">Control de Stock & Alertas</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Stock Físico Real en Bodega
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        disabled={!isAdminGalpon}
+                        value={formStockReal}
+                        onChange={(e) => setFormStockReal(Number(e.target.value) || 0)}
+                        className="h-8 text-xs font-black text-slate-900 bg-white"
+                      />
+                      <span className="font-bold text-slate-500 uppercase">{formUnidad}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Stock Comprometido (Órdenes)
+                    </label>
+                    <div className="flex items-center gap-1.5 h-8 px-2.5 bg-amber-50 rounded border border-amber-200 text-amber-900 font-bold">
+                      <span>{prodSeleccionado.stock_comprometido}</span>
+                      <span className="text-[10px] uppercase">{formUnidad}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">
+                      Alerta Stock Mínimo (Reposición)
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        type="number"
+                        disabled={!isAdminGalpon}
+                        value={formStockMinimo}
+                        onChange={(e) => setFormStockMinimo(Number(e.target.value) || 0)}
+                        className="h-8 text-xs font-bold text-slate-900 bg-white"
+                      />
+                      <span className="font-bold text-slate-500 uppercase">{formUnidad}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOQUE 4: DISTRIBUCIÓN EN EL ALMACÉN (WMS MULTI-UBICACIÓN) */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <MapPin className="w-4 h-4 text-indigo-600" />
+                  <span className="font-bold text-slate-900 text-sm">Distribución en la Bodega (WMS)</span>
+                </div>
+
+                <p className="text-[11px] text-slate-500">
+                  Este material puede estar distribuido en distintas áreas operativas de la bodega (recepción, racks o embarque):
+                </p>
+
+                <div className="space-y-2">
+                  <div className="p-2.5 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1 rounded bg-amber-100 text-amber-800">
+                        <ArrowDownToLine className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <span className="font-bold text-slate-800 block text-xs">Zona de Recepción / Entrada</span>
+                        <span className="text-[10px] text-slate-500">Bahía de Descarga Oeste • Pallet en verificación de remito</span>
+                      </div>
+                    </div>
+                    <span className="font-mono font-bold text-slate-700 text-xs">
+                      {Math.round(prodSeleccionado.stock_real * 0.15)} {formUnidad}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg border border-indigo-200 bg-indigo-50/30 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1 rounded bg-indigo-100 text-indigo-800">
+                        <Layers className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <span className="font-bold text-indigo-950 block text-xs">
+                          Almacenamiento Activo 2D (Racks / Bahías)
+                        </span>
+                        <span className="text-[10px] text-indigo-700">
+                          {prodSeleccionado.ubicacion_estanteria || "Pasillo A • Rack 01 • Nivel 1"}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="font-mono font-bold text-indigo-900 text-xs">
+                      {Math.round(prodSeleccionado.stock_real * 0.70)} {formUnidad}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1 rounded bg-emerald-100 text-emerald-800">
+                        <ArrowUpFromLine className="w-3.5 h-3.5" />
+                      </span>
+                      <div>
+                        <span className="font-bold text-slate-800 block text-xs">Muelle de Embarque / Salida</span>
+                        <span className="text-[10px] text-slate-500">Bahía de Expedición • Preparado para camión con remito QR</span>
+                      </div>
+                    </div>
+                    <span className="font-mono font-bold text-slate-700 text-xs">
+                      {Math.round(prodSeleccionado.stock_real * 0.15)} {formUnidad}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botones de Acción al pie del modal */}
+              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setModalAdminAbierto(false)}
+                  className="text-xs"
+                >
+                  Cerrar
+                </Button>
+
+                {isAdminGalpon && (
+                  <Button
+                    type="submit"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
+                  >
+                    <Save className="w-3.5 h-3.5 mr-1.5" />
+                    Guardar Cambios del Material
+                  </Button>
+                )}
+              </div>
+            </form>
           </Card>
         </div>
       )}
 
       {/* ======================================================== */}
-      {/* MODAL: ADMINISTRADOR MAESTRO DE LISTAS & BONIFICACIONES   */}
+      {/* 6. MODAL: ADMINISTRADOR MAESTRO DE LISTAS & BONIFICACIONES */}
       {/* ======================================================== */}
       {modalListasAbierto && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1261,15 +1166,14 @@ export default function ProductosPage() {
             </div>
 
             <div className="space-y-4 text-xs">
-              {/* Las 3 listas */}
               <div className="space-y-2">
-                <span className="font-bold text-slate-800 block text-xs">Listas Activas en el Sistema:</span>
+                <span className="font-bold text-slate-800 block text-xs">Listas Comerciales Configuradas:</span>
 
                 <div className="p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 flex items-start justify-between gap-3">
                   <div>
                     <span className="font-bold text-slate-900 block">1. Lista Mostrador / Pública</span>
                     <span className="text-[10px] text-slate-500">
-                      Precio regular base de venta al público sin descuentos. Cobro en caja.
+                      Precio regular base de venta al público en general. 0% de bonificación.
                     </span>
                   </div>
                   <Badge variant="outline" className="text-[10px] font-bold">Base (0%)</Badge>
@@ -1277,9 +1181,9 @@ export default function ProductosPage() {
 
                 <div className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/30 flex items-start justify-between gap-3">
                   <div>
-                    <span className="font-bold text-blue-900 block">2. Lista Contratistas Frecuentes</span>
+                    <span className="font-bold text-blue-900 block">2. Lista Contratistas & Obra</span>
                     <span className="text-[10px] text-slate-500">
-                      Descuento comercial por volumen para clientes habituales de la bodega.
+                      Bonificación pactada para constructoras y contratistas frecuentes.
                     </span>
                   </div>
                   <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[10px] font-bold">~4% a 5%</Badge>
@@ -1289,10 +1193,10 @@ export default function ProductosPage() {
                   <div>
                     <span className="font-bold text-indigo-900 block">3. Lista Red VERTIA (B2B Escrow)</span>
                     <span className="text-[10px] text-slate-500">
-                      Precio preferencial cotizado automáticamente a solicitudes de obras. Garantía de pago asegurada por VERTIA.
+                      Precio preferencial para pedidos ruteados con 100% de garantía de pago protegida por VERTIA.
                     </span>
                   </div>
-                  <Badge className="bg-indigo-600 text-white text-[10px] font-bold">Bonificación Pactada</Badge>
+                  <Badge className="bg-indigo-600 text-white text-[10px] font-bold">Bonificación Preferencial</Badge>
                 </div>
               </div>
 
@@ -1339,6 +1243,7 @@ export default function ProductosPage() {
 
                 <Button
                   onClick={handleAplicarBonificacionMasiva}
+                  disabled={!isAdminGalpon}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold h-8"
                 >
                   <Sparkles className="w-3.5 h-3.5 mr-1.5" />
@@ -1361,7 +1266,7 @@ export default function ProductosPage() {
       )}
 
       {/* ======================================================== */}
-      {/* MODAL: REGISTRAR NUEVO MATERIAL                          */}
+      {/* 7. MODAL: REGISTRAR NUEVO MATERIAL                       */}
       {/* ======================================================== */}
       {modalNuevoAbierto && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1412,7 +1317,7 @@ export default function ProductosPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="font-semibold text-slate-700 block mb-1">Categoría</label>
                   <select
@@ -1444,16 +1349,6 @@ export default function ProductosPage() {
                     <option value="TN">Tonelada (TN)</option>
                     <option value="ROL">Rollo (ROL)</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Ubicación Bodega</label>
-                  <Input
-                    placeholder="ej: Pasillo A • Rack 01"
-                    value={nuevoUbicacion}
-                    onChange={(e) => setNuevoUbicacion(e.target.value)}
-                    className="h-8 text-xs font-medium"
-                  />
                 </div>
               </div>
 
@@ -1489,7 +1384,6 @@ export default function ProductosPage() {
                 </div>
               </div>
 
-              {/* Precios y Red */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-100 pt-3">
                 <div>
                   <label className="font-semibold text-slate-700 block mb-1">Precio Mostrador ($ MXN) *</label>
