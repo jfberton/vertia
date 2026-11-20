@@ -58,6 +58,75 @@ Esta bitácora es el documento vivo de referencia para el equipo de desarrollo y
 
 ## 📝 4. Registro Cronológico de Decisiones y Cambios
 
+### [2026-11-19] - Integración de Identidad Visual Corporativa, Isologotipo SVG y Rediseño Hero con Imagen Real
+- **Autor / Agente:** Humberto / Federico Bertoncini & Lead Architect (Antigravity).
+- **Entregables y Mejoras Visuales:**
+  1. **Componente de Isologotipo Oficial (`src/components/brand/VertiaLogo.tsx`):**
+     - Isotipo SVG geométrico con degradado cian-azul-violeta (#14CBE1 -> #3975E8 -> #9A60EA).
+     - Tipografía corporativa VERTIA con subtítulo *RED DE CONSTRUCCIÓN & SUMINISTRO*.
+     - Soporte para variante `dark` en pie de página y variante compacta.
+  2. **Fotografía Real de Obra y Estilo Corporativo Luminoso (`public/images/vertia-construction-site.jpg` y `globals.css`):**
+     - Hero con imagen fotográfica de obra de gran envergadura (grúas y trabajadores), con gradiente y overlay institucional (`.landing-hero-overlay` y `.landing-hero-accent`).
+     - Transición a fondo claro corporativo (`#f4f8fd`) y tarjetas con bordes suaves y sombras elegantes (`.vertia-landing`).
+  3. **Verificación de Navegación y Cableado de Enlaces:**
+     - Enlaces principales ruteados hacia `/login`, `/dashboard`, `/cliente` y `/productos` con redirección fluida a través del guardián de autenticación.
+     - Pruebas y compilación 100% verificadas.
+- **Control de Calidad:**
+  - Suite automatizada: **103 / 103 pruebas superadas al 100% (0 fallos)**.
+  - Compilación de producción con Turbopack: **14 / 14 rutas estáticas generadas limpiamente**.
+
+
+### [2026-11-19] - Adaptación Comercial del Lenguaje en Landing Page: InvenTrack para Depósito, Vertia como Garante y Bolsa de Profesionales
+- **Autor / Agente:** Lead Architect (Antigravity).
+- **Directrices Comerciales y de Negocio (Humberto / Vertia):**
+  1. **Eliminación de Jerga Tecnológica ("B2B", "WMS", "Staging", "Matriz 2D"):**
+     - Se reemplazó el anglicismo "B2B" por lenguaje natural y directo del sector: *"Plataforma que sincroniza en tiempo real a Constructoras, Corralones de Materiales y Profesionales de la construcción"*.
+     - Se renombró el tab del proveedor a: *"InvenTrack: Módulo de administración de depósitos y stock para la red Vertia"*.
+  2. **Propuesta de Doble Canal y Organización Física para Corralones:**
+     - Se resalta que el corralón puede administrar su depósito y atender sus ventas de mostrador habituales, y al mismo tiempo vender sus materiales o excedentes en la Red Vertia.
+     - Se reemplazó "Matriz 2D" por *"Ubica tus productos fácilmente"* describiendo pasillos, estanterías y niveles.
+     - Se explicaron operativamente el **Pulmón de Ingreso** (recepción y control de fábrica antes de guardar) y el **Pulmón de Egreso** (área de expedición donde la carga se prepara con antelación para que el flete no tenga demoras).
+  3. **Ocultamiento de la Cocina Interna del Operador en la Landing Pública:**
+     - En el Tab de Vertia no se exhiben métricas de backoffice administrativo (MRR, costo de licencias, facturación interna ni botones de "Inhabilitar WMS").
+     - Se reformuló para comunicar **el valor que Vertia aporta a los integrantes de la red**:
+       - Coordinación inteligente de pedidos ruteando por cercanía geográfica y stock real.
+       - **Resguardo seguro de pagos (Custodia Escrow):** el cliente paga sobre seguro y los fondos se liberan al corralón o al profesional contra remito firmado y conformidad.
+       - **Respaldo Inter-Corralones:** coordinación de apoyo entre corralones vecinos si hay imprevistos de flete, para que la obra nunca sufra horas perdidas con albañiles parados.
+  4. **Incorporación de la Bolsa de Trabajo para Profesionales y Gremios:**
+     - Se integró el llamado a electricistas, plomeros, sanitaristas y techistas matriculados para darse de alta con su perfil dentro de la Red Vertia, accediendo a una bolsa de trabajo directa con constructoras y cobro 100% garantizado por escrow.
+- **Control de Calidad:**
+  - Suite automatizada: **103 / 103 pruebas superadas al 100% (0 fallos)**.
+  - Compilación de producción con Turbopack: **14 / 14 rutas estáticas generadas limpiamente**.
+
+
+### [2026-11-19] - Rediseño Integral de la Landing Page: Dolores de la Industria, 3 Entornos Interactivos y Stepper de Flujo
+- **Autor / Agente:** Lead Architect (Antigravity).
+- **Problema de UX Detectado:**
+  - Las tarjetas de los tres entornos mostraban maquetas de UI dobles excesivamente compactas, apiñadas e ilegibles en columnas estrechas de 320px.
+  - La propuesta de valor carecía de un bloque previo que expusiera claramente los dolores y el desorden analógico que la plataforma resuelve.
+- **Solución y Mejoras Implementadas:**
+  1. **Sección Superior de Dolores y Diagnóstico de la Industria (`#problema`):**
+     - 4 tarjetas destacadas con alertas cromáticas y foco en costos reales:
+       1. *Entregas Incumplidas & Obreros Parados* (Costo crítico: cuadrillas de 10 a 15 albañiles esperando material demorado, generando jornales perdidos que el contratista debe abonar igual).
+       2. *Stock Fantasma & Sobreventas* (corralones vendiendo mercadería ya comprometida).
+       3. *Descoordinación por WhatsApp* (pedidos informales sin cotización formal ni trazabilidad).
+       4. *Pagos a Ciegas & Remitos Rotos* (desconfianza financiera y remitos de papel extraviados sin constancia).
+       2. *Stock Fantasma & Sobreventas* (corralones vendiendo mercadería ya comprometida).
+       3. *Pagos a Ciegas & Riesgo de Cobro* (desconfianza financiera entre constructora y corralón).
+       4. *Remitos de Papel Extraviados* (falta de evidencias de entrega en destino).
+     - Banner de contraste: *"Del caos analógico a la sincronización digital con custodia de fondos"*.
+  2. **Los 3 Entornos en Formato Showcase Espacioso con Animación (`#entornos`):**
+     - Se reemplazaron las tarjetas apiñadas por un **Selector Interactivo de Entornos** (Tabs animadas: *App del Cliente*, *App del Corralón / InvenTrack* y *App de VERTIA*).
+     - Exhibición con diseño estilo estudio (tipo Vercel/Linear), tipografía legible, badges de rol y paneles visuales amplios con métricas reales.
+  3. **Stepper Dinámico del Flujo de una Solicitud (`#flujo`):**
+     - 6 pasos interactivos conectados (desde la creación del requerimiento por el cliente, ruteo por Vertia, aprobación y custodia Escrow, picking en galpón WMS con remito oficial R-091 con QR, entrega con foto comprimida WebP, hasta la conformidad y liberación de fondos).
+     - Al seleccionar cada paso, se actualiza en vivo el detalle explicativo, la evidencia requerida y el estado en el sistema.
+  4. **Acceso Rápido y Simulador 1-Click (`#acceso`):**
+     - 3 tarjetas de acceso directo por rol para probar en caliente cada entorno.
+- **Control de Calidad:**
+  - Suite automatizada: **103 / 103 pruebas superadas al 100% (0 fallos)**.
+  - Compilación de producción con Turbopack: **14 / 14 rutas estáticas generadas limpiamente**.
+
 ### [2026-11-18] - Separación Arquitectónica: Vertia (Operador de Red) vs InvenTrack (Manejo Interno del Corralón)
 - **Autor / Agente:** Lead Architect (Antigravity).
 - **Directriz de Negocio:**

@@ -1,741 +1,998 @@
 "use client";
 
+import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, type ReactNode } from "react";
 import {
   ArrowRight,
-  Bell,
   CheckCircle2,
-  ChevronRight,
-  ClipboardList,
-  FileCheck2,
-  HardHat,
-  ImagePlus,
-  Layers,
-  LayoutDashboard,
-  Package,
-  Settings,
-  ShieldCheck,
-  Truck,
-  Upload,
-  UserCheck,
-  Users,
-  Wrench,
-  BarChart3,
-  Eye,
-  ArrowLeftRight,
-  Star,
   AlertTriangle,
+  XCircle,
+  MessageSquareOff,
+  Warehouse,
+  Truck,
+  HardHat,
+  Users,
+  ShieldCheck,
+  FileText,
+  Camera,
+  Check,
+  DollarSign,
+  Layers,
+  Boxes,
+  FileCheck2,
+  Star,
+  Sparkles,
   Clock,
-  MessageSquareWarning,
-  FileQuestion,
-  Ban,
-  Zap,
-  TrendingUp,
-  CircleDot,
+  ArrowLeftRight,
+  ChevronRight,
+  Lock,
+  QrCode,
+  PackageCheck,
+  Building2,
+  Gift,
+  ShieldAlert,
+  SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-/* ═══════════════════════════════════════════════════════════════
-   SCROLL-REVEAL HOOK
-   ═══════════════════════════════════════════════════════════════ */
-
-function useReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add("revealed");
-          obs.unobserve(el);
-        }
-      },
-      { threshold: 0.12 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return ref;
-}
-
-function Reveal({
-  children,
-  className = "",
-  delay = 0,
-}: {
-  children: ReactNode;
-  className?: string;
-  delay?: number;
-}) {
-  const ref = useReveal();
-  return (
-    <div
-      ref={ref}
-      className={`reveal-item ${className}`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      {children}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   MINI-PREVIEW COMPONENTS  (clean, no repeated sidebars)
-   ═══════════════════════════════════════════════════════════════ */
-
-function MetricCard({ value, label, color }: { value: string; label: string; color: string }) {
-  return (
-    <div className="bg-slate-800/60 backdrop-blur rounded-xl p-3 text-center border border-slate-700/40">
-      <div className={`text-2xl font-black ${color}`}>{value}</div>
-      <div className="text-[10px] text-slate-500 mt-0.5 leading-tight">{label}</div>
-    </div>
-  );
-}
-
-function PreviewOperador() {
-  return (
-    <div className="rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/90 border border-slate-700/40 p-4 space-y-3 backdrop-blur">
-      <div className="flex items-center gap-2 mb-1">
-        <div className="w-5 h-5 rounded bg-indigo-600 flex items-center justify-center text-[8px] font-bold text-white">V</div>
-        <span className="text-xs font-bold text-white">Centro de operaciones</span>
-        <span className="ml-auto text-[10px] text-slate-500">Últimos 7 días</span>
-      </div>
-      <div className="grid grid-cols-4 gap-2">
-        <MetricCard value="24" label="Activas" color="text-white" />
-        <MetricCard value="12" label="En ejecución" color="text-blue-400" />
-        <MetricCard value="5" label="Validación" color="text-violet-400" />
-        <MetricCard value="67" label="Cerradas" color="text-emerald-400" />
-      </div>
-      <div className="space-y-1">
-        {[
-          { f: "VT-1048", t: "Mant.", l: "Torre Norte", s: "Asignado", sc: "bg-blue-500/20 text-blue-400 border-blue-500/30", p: 60 },
-          { f: "VT-1049", t: "Material", l: "Bodega Central", s: "Por cotizar", sc: "bg-amber-500/20 text-amber-400 border-amber-500/30", p: 20 },
-          { f: "VT-1050", t: "Mant.", l: "Torre Sur", s: "Incidencia", sc: "bg-red-500/20 text-red-400 border-red-500/30", p: 30 },
-        ].map((r) => (
-          <div key={r.f} className="flex items-center gap-2 bg-slate-900/60 rounded-lg px-3 py-2 text-[11px]">
-            <span className="text-slate-300 font-mono font-semibold">{r.f}</span>
-            <span className="text-slate-500 hidden sm:block">{r.t}</span>
-            <span className="text-slate-500 flex-1 truncate">{r.l}</span>
-            <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border ${r.sc}`}>{r.s}</span>
-            <div className="w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden hidden sm:block">
-              <div className="h-full bg-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${r.p}%` }} />
-            </div>
-          </div>
-        ))}
-      </div>
-      {/* Validación row */}
-      <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 text-[11px]">
-        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-        <span className="text-emerald-400 font-semibold">Evidencia consistente</span>
-        <span className="text-slate-500 ml-auto">95% coincidencia</span>
-      </div>
-    </div>
-  );
-}
-
-function PreviewProveedor() {
-  return (
-    <div className="rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/90 border border-slate-700/40 p-4 space-y-3 backdrop-blur">
-      <div className="flex items-center gap-2 mb-1">
-        <div className="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-[8px] font-bold text-white">V</div>
-        <span className="text-xs font-bold text-white">Solicitudes recibidas</span>
-        <div className="ml-auto flex gap-1">
-          {["Nuevas (4)", "Cotiz. (3)", "Aceptadas (8)"].map((t) => (
-            <span key={t} className="bg-slate-700/60 text-slate-400 px-1.5 py-0.5 rounded text-[8px]">{t}</span>
-          ))}
-        </div>
-      </div>
-      <div className="space-y-1">
-        {[
-          { f: "VT-1112", t: "Mant.", l: "Torre Sur · Acceso", s: "Por cotizar", sc: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
-          { f: "VT-1048", t: "Mant.", l: "Torre Norte · P.3", s: "Nuevo", sc: "bg-sky-500/20 text-sky-400 border-sky-500/30" },
-          { f: "VT-1058", t: "Material", l: "Edificio E", s: "Aceptado", sc: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
-        ].map((r) => (
-          <div key={r.f} className="flex items-center gap-2 bg-slate-900/60 rounded-lg px-3 py-2 text-[11px]">
-            <span className="text-slate-300 font-mono font-semibold">{r.f}</span>
-            <span className="text-slate-500 hidden sm:block">{r.t}</span>
-            <span className="text-slate-500 flex-1 truncate">{r.l}</span>
-            <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border ${r.sc}`}>{r.s}</span>
-          </div>
-        ))}
-      </div>
-      {/* Detalle inline */}
-      <div className="bg-slate-900/60 rounded-lg p-3 space-y-2 text-[11px]">
-        <div className="flex items-center justify-between">
-          <span className="font-semibold text-white">Detalle · VT-1112</span>
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold border bg-amber-500/20 text-amber-400 border-amber-500/30">Por cotizar</span>
-        </div>
-        <div className="flex gap-4 text-slate-400">
-          <span>Reparación de herraje</span>
-          <span className="text-slate-600">Torre Sur</span>
-        </div>
-        <div className="flex gap-2">
-          <div className="flex-1 bg-slate-800 border border-slate-700/60 rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-slate-400">
-            <Upload className="w-3 h-3" /> Cargar cotización
-          </div>
-          <button className="bg-emerald-600 text-white rounded-lg px-3 py-1.5 font-semibold text-[10px] flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Aceptar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PreviewCliente() {
-  return (
-    <div className="rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/90 border border-slate-700/40 p-4 space-y-3 backdrop-blur">
-      <div className="flex items-center gap-2 mb-1">
-        <div className="w-5 h-5 rounded bg-sky-600 flex items-center justify-center text-[8px] font-bold text-white">V</div>
-        <span className="text-xs font-bold text-white">Nueva solicitud</span>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {[
-          { icon: Wrench, label: "Mantenimiento", hint: "reparaciones, etc." },
-          { icon: Package, label: "Materiales", hint: "insumos, suministros…" },
-        ].map(({ icon: Icon, label, hint }) => (
-          <div key={label} className="bg-indigo-600/15 border border-indigo-500/30 rounded-xl p-3 flex flex-col items-center gap-1 text-center">
-            <Icon className="w-5 h-5 text-indigo-400" />
-            <span className="text-white font-semibold text-[11px]">{label}</span>
-            <span className="text-slate-500 text-[9px]">{hint}</span>
-          </div>
-        ))}
-      </div>
-      <div className="bg-slate-900/60 rounded-lg p-2 text-[11px] space-y-1">
-        <div className="text-slate-400">Descripción</div>
-        <div className="bg-slate-800 border border-slate-700/40 rounded px-2 py-1 text-slate-300">
-          Puerta de acceso dañada, no cierra…
-        </div>
-      </div>
-      <div className="h-7 border-2 border-dashed border-slate-700/60 rounded-lg flex items-center justify-center gap-1 text-slate-500 text-[10px]">
-        <ImagePlus className="w-3 h-3" /> Foto del problema
-      </div>
-      {/* Timeline */}
-      <div className="bg-slate-900/60 rounded-lg p-3 space-y-1.5 text-[11px]">
-        <div className="font-semibold text-white text-xs mb-1">Seguimiento</div>
-        {[
-          { label: "Solicitud creada", done: true },
-          { label: "Asignada por VERTIA", done: true },
-          { label: "En ejecución (Proveedor)", done: true },
-          { label: "Evidencia cargada", done: true },
-          { label: "En revisión (VERTIA)", done: false },
-        ].map((s, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <CircleDot className={`w-3 h-3 shrink-0 ${s.done ? "text-emerald-400" : "text-slate-600"}`} />
-            <span className={s.done ? "text-slate-300" : "text-slate-500"}>{s.label}</span>
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <button className="flex-1 bg-emerald-600 text-white rounded-lg py-2 font-bold text-[11px]">✓ Aprobar cierre</button>
-        <button className="flex-1 bg-slate-700 text-slate-300 rounded-lg py-2 font-bold text-[11px]">✕ Rechazar</button>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   PAGE
-   ═══════════════════════════════════════════════════════════════ */
+import { Badge } from "@/components/ui/badge";
+import { VertiaLogo } from "@/components/brand/VertiaLogo";
 
 export default function LandingPage() {
+  const [entornoActivo, setEntornoActivo] = useState<"cliente" | "proveedor" | "vertia">("cliente");
+  const [pasoFlujoActivo, setPasoFlujoActivo] = useState<number>(1);
+
+  // 6 Pasos del Flujo de una Solicitud
+  const pasosFlujo = [
+    {
+      paso: 1,
+      actor: "Cliente / Obra",
+      color: "from-sky-500 to-blue-600",
+      border: "border-sky-500/40",
+      badgeColor: "bg-sky-500/10 text-sky-400 border-sky-500/30",
+      titulo: "1. Crea la solicitud para su obra",
+      descripcion: "Selecciona una de sus obras registradas, define materiales de corralón u oficios matriculados (electricidad, plomería) y adjunta fotos del requerimiento.",
+      evidencia: "Requerimiento registrado con geolocalización y obra asociada",
+      estadoPill: "Solicitud Ingresada",
+    },
+    {
+      paso: 2,
+      actor: "VERTIA (Operador)",
+      color: "from-indigo-500 to-violet-600",
+      border: "border-indigo-500/40",
+      badgeColor: "bg-indigo-500/10 text-indigo-400 border-indigo-500/30",
+      titulo: "2. Ruteo inteligente y cotización",
+      descripcion: "La plataforma evalúa la disponibilidad de stock en corralones cercanos o profesionales matriculados disponibles, calculando flete exacto y tiempos.",
+      evidencia: "Cotización formal consolidada: materiales + logística cerrada",
+      estadoPill: "En Cotización / Ruteo",
+    },
+    {
+      paso: 3,
+      actor: "Cliente & Escrow",
+      color: "from-amber-500 to-orange-600",
+      border: "border-amber-500/40",
+      badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+      titulo: "3. Presupuesto confirmado y garantía Escrow",
+      descripcion: "El cliente aprueba el presupuesto de precio cerrado. Los fondos se retienen en una cuenta escrow protegida, garantizando el cobro al proveedor.",
+      evidencia: "Fondos en custodia garantizados. Sin riesgos de impago",
+      estadoPill: "Presupuesto Aprobado · Custodia Activa",
+    },
+    {
+      paso: 4,
+      actor: "Corralón (InvenTrack)",
+      color: "from-emerald-500 to-teal-600",
+      border: "border-emerald-500/40",
+      badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+      titulo: "4. Preparación de Carga y Remito Oficial R-091",
+      descripcion: "El corralón prepara la carga con recolección rápida guiada por ubicación física (Pasillo/Estantería/Nivel), emite el remito legal con QR y lo traslada al pulmón de egreso.",
+      evidencia: "Formulario oficial argentino R-091 con QR y patente de camión",
+      estadoPill: "Carga Pickeada · Remito Emitido",
+    },
+    {
+      paso: 5,
+      actor: "Proveedor / Chofer",
+      color: "from-purple-500 to-indigo-600",
+      border: "border-purple-500/40",
+      badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/30",
+      titulo: "5. Despacho y entrega en pie de obra",
+      descripcion: "El flete entrega en el destino. El receptor firma el remito y el chofer sube la foto de la constancia directamente desde su celular comprimida a WebP.",
+      evidencia: "Fotografía del remito firmado con compresión del 90% (<300 KB)",
+      estadoPill: "Entregado · Evidencia Cargada",
+    },
+    {
+      paso: 6,
+      actor: "Cliente & VERTIA",
+      color: "from-emerald-500 to-cyan-600",
+      border: "border-emerald-500/40",
+      badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+      titulo: "6. Conformidad y liberación de fondos",
+      descripcion: "El cliente valida el estado de la entrega en su panel. Al confirmar su conformidad, el sistema libera automáticamente la liquidación al proveedor.",
+      evidencia: "Ciclo cerrado con trazabilidad forense, fotos y balance contable",
+      estadoPill: "Finalizado con Conformidad · Pago Liberado",
+    },
+  ];
+
   return (
-    <>
-      {/* Global reveal animation styles */}
-      <style>{`
-        .reveal-item {
-          opacity: 0;
-          transform: translateY(32px);
-          transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-                      transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .reveal-item.revealed {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-8px); }
-        }
-        @keyframes glow-pulse {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.8; }
-        }
-        @keyframes gradient-shift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .float-anim { animation: float 6s ease-in-out infinite; }
-        .float-anim-delayed { animation: float 6s ease-in-out 2s infinite; }
-        .glow-pulse { animation: glow-pulse 4s ease-in-out infinite; }
-        .gradient-text {
-          background-size: 200% 200%;
-          animation: gradient-shift 6s ease infinite;
-        }
-        .env-card {
-          transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-                      box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .env-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 20px 60px -15px rgba(0,0,0,0.5);
-        }
-        .flow-step {
-          transition: transform 0.3s ease, background-color 0.3s ease;
-        }
-        .flow-step:hover {
-          transform: scale(1.04);
-        }
-        .pain-card {
-          transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-        .pain-card:hover {
-          transform: translateY(-3px);
-        }
-      `}</style>
+    <div className="vertia-landing min-h-screen bg-[#f4f8fd] text-[#112b59] flex flex-col selection:bg-indigo-600 selection:text-white overflow-x-hidden">
 
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white overflow-x-hidden">
+      {/* ── HEADER DE NAVEGACIÓN ── */}
+      <header className="landing-header sticky top-0 z-50 border-b border-slate-200/90 bg-white/90 backdrop-blur-md transition-all">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link href="/" aria-label="VERTIA - Inicio">
+            <VertiaLogo />
+          </Link>
 
-        {/* ═══════ HEADER ═══════ */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/60">
-          <div className="h-14 px-6 flex items-center justify-between max-w-7xl mx-auto w-full">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-extrabold text-white shadow-lg shadow-indigo-500/25 text-sm">
-                V
-              </div>
-              <span className="font-extrabold text-lg tracking-tight text-white">VERTIA</span>
-            </div>
-            <nav className="hidden md:flex items-center gap-6 text-sm text-slate-400">
-              <a href="#problema" className="hover:text-white transition-colors">Problema</a>
-              <a href="#solucion" className="hover:text-white transition-colors">Solución</a>
-              <a href="#flujo" className="hover:text-white transition-colors">Flujo</a>
-            </nav>
-            <div className="flex items-center gap-2">
-              <Link href="/login">
-                <Button variant="ghost" className="text-slate-400 hover:text-white text-sm h-8 px-3">
-                  Iniciar Sesión
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm h-8 px-4 shadow-md shadow-indigo-600/30">
-                  Ir a la plataforma <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                </Button>
-              </Link>
-            </div>
+          <nav className="hidden md:flex items-center gap-1 text-xs font-semibold text-slate-600">
+            <a href="#problema" className="px-3 py-1.5 rounded-full hover:text-indigo-700 hover:bg-indigo-50 transition-colors">
+              Los Dolores
+            </a>
+            <a href="#entornos" className="px-3 py-1.5 rounded-full hover:text-indigo-700 hover:bg-indigo-50 transition-colors">
+              Los 3 Entornos
+            </a>
+            <a href="#flujo" className="px-3 py-1.5 rounded-full hover:text-indigo-700 hover:bg-indigo-50 transition-colors">
+              Flujo de Solicitud
+            </a>
+            <a href="#acceso" className="px-3 py-1.5 rounded-full hover:text-indigo-700 hover:bg-indigo-50 transition-colors">
+              Simulador 1-Click
+            </a>
+          </nav>
+
+          <div className="flex items-center gap-2.5">
+            <Link href="/login">
+              <Button variant="ghost" className="text-slate-700 hover:text-indigo-700 hover:bg-indigo-50 text-xs h-9 px-4">
+                Iniciar Sesión
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold h-9 px-4 shadow-lg shadow-indigo-600/25 transition-all hover:shadow-indigo-600/40">
+                Entrar a la Plataforma <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+              </Button>
+            </Link>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* ═══════ HERO ═══════ */}
-        <section className="relative pt-32 pb-20 px-6">
-          {/* Background glow */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-indigo-600/8 rounded-full blur-[120px] glow-pulse" />
-            <div className="absolute top-40 left-1/4 w-[400px] h-[300px] bg-violet-600/6 rounded-full blur-[100px]" />
+      {/* ── HERO SECTION ── */}
+      <section className="landing-hero relative overflow-hidden">
+        <Image
+          src="/images/vertia-construction-site.jpg"
+          alt="Obra en construcción con grúas y trabajadores"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[62%_center]"
+        />
+        <div className="landing-hero-overlay absolute inset-0" />
+        <div className="landing-hero-accent absolute -right-16 -top-20 h-[140%] w-[36%]" />
+        <div className="max-w-7xl mx-auto px-6 pt-20 pb-20 relative z-10">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-violet-600/90 text-xs font-semibold text-white mb-8">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+          <span>Evolución SaaS de InvenTrack para la Cadena de la Construcción</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+          <span className="text-indigo-100 font-normal">v2.0 Multi-Tenant</span>
+        </div>
+
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white max-w-3xl leading-[1.08]">
+          Menos fricción en la obra,{" "}
+          <span className="bg-gradient-to-r from-indigo-400 via-violet-300 to-purple-400 bg-clip-text text-transparent">
+            control total en el corralón
+          </span>{" "}
+          y pagos asegurados.
+        </h1>
+
+        <p className="mt-6 text-base sm:text-lg text-slate-100 max-w-2xl leading-relaxed">
+          Plataforma que sincroniza en tiempo real a <strong className="text-white">Constructoras</strong>,{" "}
+          <strong className="text-white">Corralones de Materiales</strong> y{" "}
+          <strong className="text-white">Profesionales de la construcción</strong>. Sin cuadrillas paradas esperando camiones que no llegan, sin sobreventas de stock y con custodia de pagos.
+        </p>
+
+        <div className="mt-9 flex flex-col sm:flex-row gap-4 items-start">
+          <Link href="#entornos">
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 text-white font-bold text-sm px-8 h-12 rounded-full shadow-xl shadow-indigo-900/30 transition-all hover:scale-[1.03]"
+            >
+              Conocer los 3 Entornos <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+          <Link href="/login">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white/35 bg-white/10 hover:bg-white/20 text-white text-sm h-12 px-7 rounded-full transition-all hover:border-white/60"
+            >
+              Demo Rápida (7 Perfiles) <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+        </div>
+
+        {/* Métricas destacadas en vivo */}
+        <div className="mt-14 pt-8 border-t border-white/20 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl text-left">
+          <div className="p-3 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm">
+            <div className="text-2xl font-black text-rose-400">0 hs</div>
+            <div className="text-xs text-slate-100 mt-0.5">Cuadrillas paradas: despachos en ventana horaria</div>
+          </div>
+          <div className="p-3 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm">
+            <div className="text-2xl font-black text-indigo-400">R-091</div>
+            <div className="text-xs text-slate-100 mt-0.5">Remitos legales con QR y firma digital</div>
+          </div>
+          <div className="p-3 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm">
+            <div className="text-2xl font-black text-emerald-400">&gt;90%</div>
+            <div className="text-xs text-slate-100 mt-0.5">Ahorro de datos: fotos comprimidas a WebP</div>
+          </div>
+          <div className="p-3 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm">
+            <div className="text-2xl font-black text-purple-400">Escrow</div>
+            <div className="text-xs text-slate-100 mt-0.5">Retención de fondos hasta la conformidad</div>
+          </div>
+        </div>
+        </div>
+      </section>
+
+      {/* ── SECCIÓN 1: EL PROBLEMA / LOS DOLORES QUE RESUELVE ── */}
+      <section id="problema" className="py-20 bg-slate-900/40 border-t border-b border-slate-800/80 relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <Badge className="bg-rose-500/10 text-rose-400 border-rose-500/30 text-xs font-semibold mb-3">
+              <AlertTriangle className="w-3.5 h-3.5 mr-1" /> Diagnóstico de la Industria
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              Los 4 dolores críticos que frenan y encarecen las obras
+            </h2>
+            <p className="text-slate-400 mt-3 text-sm sm:text-base leading-relaxed">
+              La falta de herramientas coordinadas entre la obra y el depósito provoca pérdidas millonarias en fletes vacíos, disputas por remitos borrosos y demoras que paralizan frentes de trabajo.
+            </p>
           </div>
 
-          <div className="relative max-w-4xl mx-auto text-center">
-            <Reveal>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 text-xs font-medium text-red-300 mb-8">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>El problema que enfrenta la industria de la construcción</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Dolor 1 - DESTACADO: Cuadrillas Paradas por Entregas Incumplidas */}
+            <div className="p-6 rounded-2xl bg-slate-900/90 border-2 border-rose-500/40 hover:border-rose-500/70 shadow-lg shadow-rose-950/20 transition-all group flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-rose-500 text-white text-[9px] font-black uppercase px-2.5 py-0.5 rounded-bl-lg tracking-wider">
+                Costo Crítico
               </div>
-            </Reveal>
-
-            <Reveal delay={100}>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1]">
-                Solicitudes perdidas,
-                <br />
-                <span className="bg-gradient-to-r from-red-400 via-orange-300 to-amber-400 bg-clip-text text-transparent gradient-text">
-                  trabajos sin trazabilidad
-                </span>
-                <br />
-                y cierres sin evidencia.
-              </h1>
-            </Reveal>
-
-            <Reveal delay={200}>
-              <p className="mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                Coordinar clientes, contratistas y operadores por WhatsApp, correo y planillas genera
-                pérdida de control, re-trabajos y conflictos sin respaldo documental.
-              </p>
-            </Reveal>
-
-            <Reveal delay={300}>
-              <div className="mt-10 flex flex-col sm:flex-row gap-3 items-center justify-center">
-                <Link href="#solucion">
-                  <Button
-                    size="lg"
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm px-8 h-12 shadow-xl shadow-indigo-600/25 transition-all hover:shadow-indigo-500/40"
-                  >
-                    Ver cómo VERTIA lo resuelve <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
-                <Link href="/dashboard">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-slate-700 bg-slate-900/50 hover:bg-slate-800 text-slate-200 text-sm h-12 px-6"
-                  >
-                    Explorar la plataforma
-                  </Button>
-                </Link>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* ═══════ PAIN POINTS ═══════ */}
-        <section id="problema" className="relative py-20 px-6">
-          <div className="max-w-6xl mx-auto">
-            <Reveal>
-              <div className="text-center mb-14">
-                <span className="text-xs font-semibold text-red-400 uppercase tracking-widest">¿Te suena familiar?</span>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-3">
-                  Los dolores que nadie quiere enfrentar
-                </h2>
-                <p className="text-slate-400 mt-3 max-w-xl mx-auto">
-                  Estos problemas cuestan dinero, tiempo y relaciones profesionales todos los días.
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <Clock className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-white text-base">Entregas Incumplidas & Obreros Parados</h3>
+                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                  El corralón promete el material para las 8:00 AM y no llega. Tener a <strong className="text-slate-200">10 o 15 obreros parados sin poder trabajar</strong> representa una sangría de dinero directo en jornales que el contratista debe pagar igual.
                 </p>
               </div>
-            </Reveal>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[
-                {
-                  icon: MessageSquareWarning,
-                  title: "Comunicación fragmentada",
-                  desc: "WhatsApp, llamadas, correos… la información se pierde entre canales y no queda registro formal.",
-                  color: "text-red-400",
-                  border: "hover:border-red-500/40",
-                },
-                {
-                  icon: FileQuestion,
-                  title: "Sin evidencia documental",
-                  desc: "Fotos en el celular, cotizaciones en PDF sueltos. Cuando hay un reclamo, no hay respaldo.",
-                  color: "text-orange-400",
-                  border: "hover:border-orange-500/40",
-                },
-                {
-                  icon: Clock,
-                  title: "Re-trabajos y demoras",
-                  desc: "Falta de seguimiento genera trabajos mal hechos que se descubren tarde y cuestan el doble.",
-                  color: "text-amber-400",
-                  border: "hover:border-amber-500/40",
-                },
-                {
-                  icon: Ban,
-                  title: "Cierres sin aprobación",
-                  desc: "El proveedor dice que terminó, el cliente no validó, el operador no sabe. ¿Quién tiene razón?",
-                  color: "text-rose-400",
-                  border: "hover:border-rose-500/40",
-                },
-                {
-                  icon: Eye,
-                  title: "Cero visibilidad operativa",
-                  desc: "No sabés cuántas solicitudes hay activas, cuántas están atrasadas ni quién las tiene asignadas.",
-                  color: "text-pink-400",
-                  border: "hover:border-pink-500/40",
-                },
-                {
-                  icon: AlertTriangle,
-                  title: "Incidencias no rastreadas",
-                  desc: "Un problema grave se reporta por teléfono, nadie lo documenta, se vuelve a repetir.",
-                  color: "text-yellow-400",
-                  border: "hover:border-yellow-500/40",
-                },
-              ].map(({ icon: Icon, title, desc, color, border }, i) => (
-                <Reveal key={title} delay={i * 80}>
-                  <div className={`pain-card bg-slate-900/60 border border-slate-800 ${border} rounded-2xl p-6 h-full`}>
-                    <div className={`w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center ${color} mb-4`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <h3 className="font-bold text-white text-sm mb-2">{title}</h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ═══════ TRANSITION: La solución ═══════ */}
-        <section className="relative py-16 px-6">
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-600/8 rounded-full blur-[100px]" />
-          </div>
-          <div className="relative max-w-3xl mx-auto text-center">
-            <Reveal>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-xs font-medium text-emerald-300 mb-6">
-                <Zap className="w-3.5 h-3.5" />
-                <span>La solución</span>
+              <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-rose-400 font-semibold">
+                <XCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>Impacto: Pérdida económica de horas/hombre no productivas</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">
-                Un solo sistema,{" "}
-                <span className="bg-gradient-to-r from-indigo-400 via-violet-300 to-purple-400 bg-clip-text text-transparent">
-                  tres entornos coordinados
-                </span>
-              </h2>
-              <p className="mt-4 text-slate-400 max-w-xl mx-auto leading-relaxed">
-                VERTIA conecta clientes, contratistas y operadores en una plataforma con trazabilidad completa:
-                desde la solicitud inicial hasta la aprobación del cierre con evidencias.
-              </p>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* ═══════ THREE ENVIRONMENTS ═══════ */}
-        <section id="solucion" className="relative py-10 px-6 pb-24">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-              {/* ── Operador ── */}
-              <Reveal delay={0}>
-                <div className="env-card rounded-3xl border border-indigo-500/25 bg-gradient-to-b from-slate-900 to-slate-950 overflow-hidden h-full flex flex-col">
-                  <div className="p-6 pb-4">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-600/30 float-anim">
-                        <ShieldCheck className="w-5 h-5 text-white" />
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/25 px-3 py-1 rounded-full">
-                        Control interno
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-extrabold text-white">Entorno VERTIA</h3>
-                    <p className="text-xs text-indigo-300/80 font-medium mt-0.5">Operador</p>
-                    <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-                      Monitorea todas las solicitudes, gestiona asignaciones, valida evidencias, controla incidencias y autoriza cierres.
-                    </p>
-                  </div>
-                  <div className="px-5 pb-5 flex-1">
-                    <PreviewOperador />
-                  </div>
-                  <div className="border-t border-slate-800/60 px-5 py-4 grid grid-cols-2 gap-y-2 gap-x-4">
-                    {[
-                      { icon: Eye, label: "Monitoreo total" },
-                      { icon: Bell, label: "Notificaciones" },
-                      { icon: FileCheck2, label: "Validar evidencias" },
-                      { icon: ShieldCheck, label: "Control de cierre" },
-                    ].map(({ icon: I, label }) => (
-                      <div key={label} className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                        <I className="w-3 h-3 text-indigo-400/60 shrink-0" /> {label}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Reveal>
-
-              {/* ── Contratista / Proveedor ── */}
-              <Reveal delay={150}>
-                <div className="env-card rounded-3xl border border-emerald-500/25 bg-gradient-to-b from-slate-900 to-slate-950 overflow-hidden h-full flex flex-col">
-                  <div className="p-6 pb-4">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-600/30 float-anim-delayed">
-                        <HardHat className="w-5 h-5 text-white" />
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-3 py-1 rounded-full">
-                        Ejecución
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-extrabold text-white">Contratista / Proveedor</h3>
-                    <p className="text-xs text-emerald-300/80 font-medium mt-0.5">Ejecución de trabajos o entrega de materiales</p>
-                    <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-                      Recibe solicitudes, cotiza, acepta y ejecuta el trabajo, sube evidencias y actualiza el estado con documentación.
-                    </p>
-                  </div>
-                  <div className="px-5 pb-5 flex-1">
-                    <PreviewProveedor />
-                  </div>
-                  <div className="border-t border-slate-800/60 px-5 py-4 grid grid-cols-2 gap-y-2 gap-x-4">
-                    {[
-                      { icon: ClipboardList, label: "Recibe solicitudes" },
-                      { icon: Wrench, label: "Gestiona ejecución" },
-                      { icon: Upload, label: "Sube evidencias" },
-                      { icon: Truck, label: "Seguimiento entregas" },
-                    ].map(({ icon: I, label }) => (
-                      <div key={label} className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                        <I className="w-3 h-3 text-emerald-400/60 shrink-0" /> {label}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Reveal>
-
-              {/* ── Cliente ── */}
-              <Reveal delay={300}>
-                <div className="env-card rounded-3xl border border-sky-500/25 bg-gradient-to-b from-slate-900 to-slate-950 overflow-hidden h-full flex flex-col">
-                  <div className="p-6 pb-4">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-600 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-600/30 float-anim">
-                        <Users className="w-5 h-5 text-white" />
-                      </div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-sky-400 bg-sky-500/10 border border-sky-500/25 px-3 py-1 rounded-full">
-                        Solicitante
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-extrabold text-white">Entorno Cliente</h3>
-                    <p className="text-xs text-sky-300/80 font-medium mt-0.5">Solicita, da seguimiento y aprueba</p>
-                    <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-                      Crea solicitudes, sube fotos del problema, da seguimiento, compara evidencias y aprueba o rechaza el cierre.
-                    </p>
-                  </div>
-                  <div className="px-5 pb-5 flex-1">
-                    <PreviewCliente />
-                  </div>
-                  <div className="border-t border-slate-800/60 px-5 py-4 grid grid-cols-2 gap-y-2 gap-x-4">
-                    {[
-                      { icon: ImagePlus, label: "Fotos problema / resultado" },
-                      { icon: ArrowLeftRight, label: "Compara evidencias" },
-                      { icon: CheckCircle2, label: "Aprueba cierre" },
-                      { icon: Layers, label: "Historial trazable" },
-                    ].map(({ icon: I, label }) => (
-                      <div key={label} className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                        <I className="w-3 h-3 text-sky-400/60 shrink-0" /> {label}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Reveal>
             </div>
-          </div>
-        </section>
 
-        {/* ═══════ FLOW ═══════ */}
-        <section id="flujo" className="relative py-20 px-6 bg-gradient-to-b from-slate-900/40 to-slate-950">
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-violet-600/5 rounded-full blur-[120px]" />
-          </div>
-
-          <div className="relative max-w-5xl mx-auto">
-            <Reveal>
-              <div className="text-center mb-14">
-                <span className="text-xs font-semibold text-violet-400 uppercase tracking-widest">Proceso de punta a punta</span>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-white mt-3">
-                  Flujo de una solicitud en el sistema
-                </h2>
-                <p className="text-slate-400 mt-3 max-w-lg mx-auto">
-                  Así viaja una solicitud a través de los tres entornos, desde su creación hasta el cierre.
+            {/* Dolor 2 - Stock Fantasma */}
+            <div className="p-6 rounded-2xl bg-slate-900/80 border border-amber-950/60 hover:border-amber-500/30 transition-all group flex flex-col justify-between">
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <Boxes className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-white text-base">Stock Fantasma & Sobreventas</h3>
+                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                  El corralón confirma el pedido mirando el stock total de estantería, sin descontar lo que ya comprometió para otros clientes. Cuando el flete llega a cargar, el material ya no está.
                 </p>
               </div>
-            </Reveal>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                {
-                  num: 1, actor: "Cliente", color: "from-sky-600 to-blue-600", text: "text-sky-400", border: "border-sky-500/25",
-                  desc: "Crea la solicitud y sube fotos del problema (o necesidad).",
-                  icon: ImagePlus,
-                },
-                {
-                  num: 2, actor: "VERTIA", color: "from-indigo-600 to-violet-600", text: "text-indigo-400", border: "border-indigo-500/25",
-                  desc: "Valida la solicitud, verifica la información y la asigna a un contratista o proveedor.",
-                  icon: ShieldCheck,
-                },
-                {
-                  num: 3, actor: "Contratista / Proveedor", color: "from-emerald-600 to-teal-600", text: "text-emerald-400", border: "border-emerald-500/25",
-                  desc: "Recibe la solicitud, cotiza y ejecuta el trabajo o prepara la entrega.",
-                  icon: HardHat,
-                },
-                {
-                  num: 4, actor: "Ambas partes", color: "from-amber-600 to-orange-600", text: "text-amber-400", border: "border-amber-500/25",
-                  desc: "Suben evidencias del resultado: el proveedor su trabajo y el cliente su conformidad.",
-                  icon: Upload,
-                },
-                {
-                  num: 5, actor: "VERTIA", color: "from-indigo-600 to-violet-600", text: "text-indigo-400", border: "border-indigo-500/25",
-                  desc: "Verifica y valida las evidencias de ambas partes. Autoriza el cierre.",
-                  icon: FileCheck2,
-                },
-                {
-                  num: 6, actor: "Cliente", color: "from-sky-600 to-blue-600", text: "text-sky-400", border: "border-sky-500/25",
-                  desc: "Aprueba el cierre de la solicitud. Queda registrada con trazabilidad completa.",
-                  icon: CheckCircle2,
-                },
-              ].map(({ num, actor, color, text, border, desc, icon: Icon }, i) => (
-                <Reveal key={num} delay={i * 100}>
-                  <div className={`flow-step bg-slate-900/70 border ${border} rounded-2xl p-5 h-full`}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${color} flex items-center justify-center text-white font-extrabold text-sm shadow-lg shrink-0`}>
-                        {num}
-                      </div>
-                      <div>
-                        <div className={`text-xs font-bold ${text}`}>{actor}</div>
-                      </div>
-                      <Icon className={`w-4 h-4 ${text} ml-auto opacity-50`} />
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
-                  </div>
-                </Reveal>
-              ))}
+              <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-amber-400/90 font-medium">
+                <XCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>Impacto: Camiones vacíos y reprogramaciones de obra</span>
+              </div>
             </div>
 
-            {/* Resultado */}
-            <Reveal delay={650}>
-              <div className="mt-8 bg-gradient-to-r from-indigo-600/15 via-violet-600/15 to-indigo-600/15 border border-indigo-500/25 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-5 text-center md:text-left">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-xl shadow-indigo-600/30 shrink-0">
-                  <TrendingUp className="w-6 h-6 text-white" />
+            {/* Dolor 3 - Caos por WhatsApp */}
+            <div className="p-6 rounded-2xl bg-slate-900/80 border border-indigo-950/60 hover:border-indigo-500/30 transition-all group flex flex-col justify-between">
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <MessageSquareOff className="w-6 h-6" />
                 </div>
-                <div>
-                  <div className="font-extrabold text-white text-lg">Resultado</div>
-                  <div className="text-slate-400 text-sm mt-1">
-                    Trabajo o entrega completada con <strong className="text-slate-300">trazabilidad, evidencias y registro</strong> en el historial.
-                    Sin llamadas, sin WhatsApp, sin dudas.
+                <h3 className="font-bold text-white text-base">Descoordinación por WhatsApp</h3>
+                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                  Requerimientos pasados por audios de chat, mensajes que se pierden entre fotos personales y falta de un documento formal de cotización antes del despacho a obra.
+                </p>
+              </div>
+              <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-indigo-400/90 font-medium">
+                <XCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>Impacto: Errores en pedidos y discusiones de precios</span>
+              </div>
+            </div>
+
+            {/* Dolor 4 - Pagos a Ciegas & Remitos Perdidos */}
+            <div className="p-6 rounded-2xl bg-slate-900/80 border border-purple-950/60 hover:border-purple-500/30 transition-all group flex flex-col justify-between">
+              <div>
+                <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-white text-base">Pagos a Ciegas & Remitos Rotos</h3>
+                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                  Constructoras que pagan por adelantado sin certeza de entrega, corralones con riesgo de impago y remitos de papel manchados que nadie puede auditar contablemente.
+                </p>
+              </div>
+              <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center gap-2 text-[11px] text-purple-400/90 font-medium">
+                <XCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>Impacto: Disputas comerciales y falta de respaldo legal</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Banner de Contraste Solución */}
+          <div className="mt-12 p-6 rounded-2xl bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900/60 border border-indigo-500/30 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-bold text-white text-base">La Solución: Una plataforma única, tres entornos conectados</h4>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  VERTIA digitaliza cada interacción: desde el pedido del arquitecto hasta el picking en el rack, el flete con remito digital y la liberación del pago tras la conformidad.
+                </p>
+              </div>
+            </div>
+            <a href="#entornos" className="shrink-0">
+              <Button className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 h-10 rounded-xl shadow-lg shadow-indigo-600/30">
+                Ver los 3 Entornos <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+              </Button>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECCIÓN 2: LAS SOLUCIONES — LOS 3 ENTORNOS COORDINADOS ── */}
+      <section id="entornos" className="py-24 max-w-7xl mx-auto px-6 relative">
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/30 text-xs font-semibold mb-3">
+            <Layers className="w-3.5 h-3.5 mr-1" /> Arquitectura del Sistema
+          </Badge>
+          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+            Tres aplicaciones diseñadas a medida para cada actor
+          </h2>
+          <p className="text-slate-400 mt-3 text-sm sm:text-base leading-relaxed">
+            Cada usuario ingresa a un entorno optimizado para su trabajo diario, con permisos estrictos de acceso (RBAC) y sin interferencia en la gestión interna de los demás.
+          </p>
+        </div>
+
+        {/* Selector Interactivo de Entornos (Tabs Espaciosas) */}
+        <div className="flex items-center justify-center gap-2 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl mx-auto mb-12">
+          <button
+            onClick={() => setEntornoActivo("cliente")}
+            className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+              entornoActivo === "cliente"
+                ? "bg-sky-600 text-white shadow-lg shadow-sky-600/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>1. App del Cliente</span>
+          </button>
+
+          <button
+            onClick={() => setEntornoActivo("proveedor")}
+            className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+              entornoActivo === "proveedor"
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+            }`}
+          >
+            <Warehouse className="w-4 h-4" />
+            <span>2. App del Corralón</span>
+          </button>
+
+          <button
+            onClick={() => setEntornoActivo("vertia")}
+            className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+              entornoActivo === "vertia"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>3. App de VERTIA</span>
+          </button>
+        </div>
+
+        {/* Tarjeta de Exhibición Espaciosa (Showcase Studio) */}
+        <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 sm:p-10 shadow-2xl backdrop-blur-md">
+          {/* TAB 1: CLIENTE */}
+          {entornoActivo === "cliente" && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center animate-in fade-in duration-300">
+              <div className="lg:col-span-5 space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-semibold">
+                  <HardHat className="w-3.5 h-3.5" /> Constructora, Estudio o Desarrollador
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">
+                  Portal del Cliente: Obras, Cotizaciones Firmes y Red de Oficios
+                </h3>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Permite a arquitectos y directores de obra solicitar materiales con precios congelados y flete incluido, contratar oficios matriculados y verificar entregas antes de autorizar pagos.
+                </p>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Gestión de Obras en Paralelo</span>
+                      <span className="text-slate-400 text-xs">Asigna cada pedido a una obra concreta con dirección, responsable y teléfono de recepción.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Cero Horas Perdidas: Ventanas Horarias de Entrega</span>
+                      <span className="text-slate-400 text-xs">El material llega en el horario comprometido. Tu cuadrilla no pierde jornadas laborales parada esperando camiones.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Presupuesto Confirmado con Flete Cerrado</span>
+                      <span className="text-slate-400 text-xs">Sin costos sorpresa. El valor cotizado por VERTIA se respeta al 100%.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Garantía Escrow en Oficios y Gremios</span>
+                      <span className="text-slate-400 text-xs">El pago de mano de obra queda en custodia hasta que el cliente firma la conformidad del trabajo.</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Reveal>
-          </div>
-        </section>
 
-        {/* ═══════ CTA ═══════ */}
-        <section className="py-20 px-6">
-          <Reveal>
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white">
-                Listo para ordenar tus operaciones
-              </h2>
-              <p className="text-slate-400 mt-4 max-w-lg mx-auto">
-                Ingresá a la plataforma según tu rol y empezá a gestionar solicitudes con trazabilidad completa.
-              </p>
-              <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  { icon: ShieldCheck, title: "VERTIA (Operador)", desc: "Centro de operaciones", color: "from-indigo-600 to-violet-600", border: "border-indigo-500/25", href: "/dashboard" },
-                  { icon: HardHat, title: "Contratista / Proveedor", desc: "Solicitudes y ejecución", color: "from-emerald-600 to-teal-600", border: "border-emerald-500/25", href: "/dashboard" },
-                  { icon: UserCheck, title: "Cliente", desc: "Solicitar y aprobar", color: "from-sky-600 to-blue-600", border: "border-sky-500/25", href: "/dashboard" },
-                ].map(({ icon: Icon, title, desc, color, border, href }) => (
-                  <Link
-                    key={title}
-                    href={href}
-                    className={`group rounded-2xl border ${border} bg-slate-900/60 p-6 flex flex-col items-center gap-3 hover:bg-slate-800/60 transition-all hover:-translate-y-1`}
-                  >
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${color} flex items-center justify-center shadow-lg`}>
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="font-bold text-white text-sm">{title}</div>
-                    <div className="text-slate-500 text-xs">{desc}</div>
-                    <div className="flex items-center gap-1 text-xs text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Ingresar <ArrowRight className="w-3 h-3" />
-                    </div>
+                <div className="pt-4 flex items-center gap-3">
+                  <Link href="/cliente">
+                    <Button className="bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-lg shadow-sky-600/30">
+                      Explorar Portal del Cliente <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                    </Button>
                   </Link>
-                ))}
+                  <span className="text-[11px] text-slate-500">Módulo autónomo para obras</span>
+                </div>
+              </div>
+
+              {/* Preview Visual Espacioso */}
+              <div className="lg:col-span-7 bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-rose-500/70" />
+                    <div className="w-3 h-3 rounded-full bg-amber-500/70" />
+                    <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
+                    <span className="text-xs font-mono text-slate-400 ml-2">vertia.com/cliente</span>
+                  </div>
+                  <Badge className="bg-sky-500/20 text-sky-400 border-sky-500/30 text-[10px]">
+                    Perfil: Constructora Arcos S.A.
+                  </Badge>
+                </div>
+
+                {/* Tarjetas simuladas espaciosas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div className="text-slate-400 text-[11px] font-semibold">Obra Activa</div>
+                    <div className="text-base font-bold text-white">Torre Norte · Piso 3</div>
+                    <div className="text-slate-400 text-[11px]">Bv. Oroño 1420 · Rosario</div>
+                    <div className="pt-2 flex items-center justify-between text-[11px]">
+                      <span className="text-emerald-400 font-semibold">Pedido VT-1048 en camino</span>
+                      <span className="text-slate-500">Chofer: C. Méndez</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div className="text-slate-400 text-[11px] font-semibold">Oficio con Custodia Escrow</div>
+                    <div className="text-base font-bold text-white">Electricista Matriculado</div>
+                    <div className="text-slate-400 text-[11px]">Roberto Varela (MAT-9842)</div>
+                    <div className="pt-2 flex items-center justify-between text-[11px]">
+                      <span className="text-amber-400 font-semibold">$150.000 en Custodia</span>
+                      <span className="text-slate-500">Pend. Conformidad</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-white text-xs">Solicitud #VT-1049 · Presupuesto Confirmado</span>
+                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
+                      Precio Congelado
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-slate-400 grid grid-cols-3 gap-2">
+                    <div>120x Cemento Loma Negra</div>
+                    <div>30x Hierro Nervado 12mm</div>
+                    <div className="text-right text-slate-300 font-bold">Total: $285.000 USD</div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px]">
+                    <span className="text-slate-400">Flete bonificado por volumen</span>
+                    <button className="bg-emerald-600 text-white font-bold px-3 py-1 rounded-lg">
+                      Aprobar y Despachar
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </Reveal>
-        </section>
+          )}
 
-        {/* ═══════ FOOTER ═══════ */}
-        <footer className="border-t border-slate-800/60 py-8 text-center text-xs text-slate-600">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="w-5 h-5 rounded bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-[8px] font-bold text-white">
-              V
+          {/* TAB 2: PROVEEDOR / CORRALÓN */}
+          {entornoActivo === "proveedor" && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center animate-in fade-in duration-300">
+              <div className="lg:col-span-5 space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-semibold">
+                  <Warehouse className="w-3.5 h-3.5" /> Corralón de Materiales & Distribución
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">
+                  InvenTrack: Módulo de administración de depósitos y stock para la red Vertia
+                </h3>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  El sistema que te permite administrar tus depósitos propios y tus ventas de mostrador habituales, y al mismo tiempo abrir un nuevo canal directo para vender dentro de la Red Vertia.
+                </p>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Ventas de Mostrador + Ventas en la Red Vertia</span>
+                      <span className="text-slate-400 text-xs">Manejá tus clientes de siempre en el local y publicá excedentes o catálogo para recibir pedidos directos de constructoras de la red.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Control de Stock Real vs. Comprometido (Dual Stock)</span>
+                      <span className="text-slate-400 text-xs">Sabés al instante qué mercadería tenés libre para vender en mostrador o en la red, sin comprometer nunca lo que ya tenés vendido para otra obra.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Ubica tus productos fácilmente</span>
+                      <span className="text-slate-400 text-xs">Organizá tu depósito con códigos claros de ubicación física (pasillo, estantería y nivel) para que tus operarios encuentren y preparen el material en segundos.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Pulmón de Ingreso y Pulmón de Egreso</span>
+                      <span className="text-slate-400 text-xs">Controlá lo que llega de fábrica en recepción antes de guardarlo, y prepará los pedidos con antelación en el área de expedición para que cuando llegue el flete la carga salga sin demoras.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center gap-3">
+                  <Link href="/productos">
+                    <Button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-lg shadow-emerald-600/30">
+                      Entrar a InvenTrack <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                    </Button>
+                  </Link>
+                  <span className="text-[11px] text-slate-500">Módulo exclusivo para corralones</span>
+                </div>
+              </div>
+
+              {/* Preview Visual Depósito Espacioso */}
+              <div className="lg:col-span-7 bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-rose-500/70" />
+                    <div className="w-3 h-3 rounded-full bg-amber-500/70" />
+                    <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
+                    <span className="text-xs font-mono text-slate-400 ml-2">inventrack.vertia.com/almacenes</span>
+                  </div>
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
+                    Corralón Los Pinos · Depósito Central
+                  </Badge>
+                </div>
+
+                {/* Métricas de Stock Dual */}
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400 text-[10px] font-semibold">Stock Físico Real</div>
+                    <div className="text-xl font-extrabold text-white mt-1">120 un</div>
+                    <div className="text-[10px] text-slate-500">En estanterías</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400 text-[10px] font-semibold">Stock Comprometido</div>
+                    <div className="text-xl font-extrabold text-amber-400 mt-1">60 un</div>
+                    <div className="text-[10px] text-amber-500/80">Vendido para obras</div>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400 text-[10px] font-semibold">Libre Mostrador / Red</div>
+                    <div className="text-xl font-extrabold text-emerald-400 mt-1">60 un</div>
+                    <div className="text-[10px] text-emerald-500/80">Disponible para vender</div>
+                  </div>
+                </div>
+
+                {/* Pulmón de Egreso & Ubicaciones */}
+                <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-white flex items-center gap-1.5">
+                      <PackageCheck className="w-4 h-4 text-emerald-400" />
+                      Pulmón de Egreso · Carga Lista para Flete
+                    </span>
+                    <span className="text-emerald-400 text-[11px] font-semibold">Salida 08:30 hs</span>
+                  </div>
+                  <div className="text-[11px] text-slate-300">
+                    Ubicación en galpón: <span className="font-mono text-indigo-300">Pasillo A · Estantería 3 · Nivel 2</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Chofer: Carlos Méndez • Camión Mercedes 710 • Remito oficial R-091 con QR impreso
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px]">
+                    <span className="text-slate-500">Destino: Torre Norte (Bv. Oroño 1420)</span>
+                    <span className="text-indigo-400 font-semibold">Listo para cargar al camión</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <span className="font-bold text-slate-500">VERTIA</span>
+          )}
+
+          {/* TAB 3: RED VERTIA - Coordinación, Resguardo y Profesionales */}
+          {entornoActivo === "vertia" && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center animate-in fade-in duration-300">
+              <div className="lg:col-span-5 space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 text-xs font-semibold">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Garante de Confianza, Coordinación & Pagos
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">
+                  Red Vertia: Coordinación de Pedidos, Resguardo de Pagos y Bolsa de Profesionales
+                </h3>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  El motor que conecta y facilita la operatoria a todos los integrantes de la red (clientes, corralones y profesionales), garantizando entregas a tiempo y resguardo financiero en cada operación.
+                </p>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Coordinación Inteligente de Pedidos</span>
+                      <span className="text-slate-400 text-xs">Rutea cada requerimiento al corralón o proveedor más cercano que tenga stock real disponible, calculando fletes justos y tiempos de entrega reales.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Resguardo Seguro de Pagos (Garantía Escrow)</span>
+                      <span className="text-slate-400 text-xs">Cuando un contratista compra materiales o contrata servicios, el dinero queda resguardado por Vertia hasta que la obra confirma la entrega y conformidad. El proveedor cobra seguro, el cliente paga sobre seguro.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Bolsa de Trabajo & Profesionales Matriculados</span>
+                      <span className="text-slate-400 text-xs">Electricistas, plomeros, sanitaristas, techistas y gremios pueden darse de alta con su perfil y matrícula para ser contratados por constructoras con cobro 100% asegurado.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-white text-xs block">Respaldo Inter-Corralones (Sin Cuadrillas Paradas)</span>
+                      <span className="text-slate-400 text-xs">Si un corralón tiene un imprevisto con un flete o rotura de stock, la Red Vertia coordina con un corralón vecino para abastecer la obra sin demorar a los obreros.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex items-center gap-3">
+                  <Link href="/dashboard">
+                    <Button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-lg shadow-indigo-600/30">
+                      Conocer la Red Vertia <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                    </Button>
+                  </Link>
+                  <span className="text-[11px] text-slate-500">Respaldo y garantías para toda la red</span>
+                </div>
+              </div>
+
+              {/* Preview Visual Red Vertia Espacioso */}
+              <div className="lg:col-span-7 bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-rose-500/70" />
+                    <div className="w-3 h-3 rounded-full bg-amber-500/70" />
+                    <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
+                    <span className="text-xs font-mono text-slate-400 ml-2">vertia.com/red</span>
+                  </div>
+                  <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 text-[10px]">
+                    Garantía y Coordinación Red Vertia
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400 text-[11px] font-semibold">Coordinación de Pedidos</div>
+                    <div className="text-lg font-bold text-white mt-1">100% con flete asignado</div>
+                    <div className="text-[10px] text-emerald-400 mt-0.5">Ruteo por cercanía y stock real</div>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+                    <div className="text-slate-400 text-[11px] font-semibold">Resguardo de Pagos (Escrow)</div>
+                    <div className="text-lg font-bold text-emerald-400 mt-1">Custodia Activa</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">Liberación contra remito firmado</div>
+                  </div>
+                </div>
+
+                {/* Tarjeta de Coordinación de Pedido y Oficio */}
+                <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-white flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                      Asignación de Obra · Pedido #VT-1049
+                    </span>
+                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
+                      Pago en Resguardo
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-slate-300 grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-slate-500 block">Proveedor Asignado:</span>
+                      Corralón Los Pinos (a 4.2 km de obra)
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Profesional Vinculado:</span>
+                      Roberto Varela (Electricista Matriculado)
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px]">
+                    <span className="text-amber-400 font-semibold">$285.000 en custodia garantizada</span>
+                    <span className="text-slate-400">Entrega programada 08:30 hs</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── SECCIÓN 3: FLUJO COMPLETO DE UNA SOLICITUD EN EL SISTEMA ── */}
+      <section id="flujo" className="py-24 bg-slate-900/40 border-t border-b border-slate-800/80 relative">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-xs font-semibold mb-3">
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> De Punta a Punta
+            </Badge>
+            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+              Flujo de una solicitud a través de los 3 entornos
+            </h2>
+            <p className="text-slate-400 mt-3 text-sm sm:text-base leading-relaxed">
+              Descubrí cómo viaja un requerimiento desde que la obra detecta la necesidad hasta que el chofer descarga el material y se libera el pago protegido.
+            </p>
           </div>
-          <p className="text-slate-500">Plataforma operativa para construcciones, proyectos e inmuebles · 2026</p>
-        </footer>
-      </div>
-    </>
+
+          {/* Stepper Interactivo: Barra de 6 Pasos */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-10">
+            {pasosFlujo.map((p) => {
+              const esActivo = pasoFlujoActivo === p.paso;
+              return (
+                <button
+                  key={p.paso}
+                  onClick={() => setPasoFlujoActivo(p.paso)}
+                  className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between ${
+                    esActivo
+                      ? "border-indigo-500 bg-slate-900 ring-2 ring-indigo-500/30 shadow-xl"
+                      : "border-slate-800/80 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-xs ${
+                        esActivo ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400"
+                      }`}
+                    >
+                      {p.paso}
+                    </span>
+                    <Badge className={`text-[9px] font-bold px-1.5 py-0.2 ${p.badgeColor}`}>
+                      {p.actor}
+                    </Badge>
+                  </div>
+                  <div>
+                    <div className={`text-xs font-bold leading-tight ${esActivo ? "text-white" : "text-slate-300"}`}>
+                      Paso {p.paso}
+                    </div>
+                    <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                      {p.titulo.split(". ")[1]}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Detalle Ampliado del Paso Seleccionado */}
+          {(() => {
+            const actual = pasosFlujo.find((p) => p.paso === pasoFlujoActivo) || pasosFlujo[0];
+            return (
+              <div className="p-8 sm:p-10 rounded-3xl bg-slate-900 border border-slate-800/90 shadow-2xl relative overflow-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                  <div className="lg:col-span-8 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <span className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-black text-lg flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                        {actual.paso}
+                      </span>
+                      <div>
+                        <Badge className={`text-xs font-bold ${actual.badgeColor}`}>
+                          Responsable: {actual.actor}
+                        </Badge>
+                        <h3 className="text-xl sm:text-2xl font-black text-white mt-1">
+                          {actual.titulo}
+                        </h3>
+                      </div>
+                    </div>
+
+                    <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-3xl">
+                      {actual.descripcion}
+                    </p>
+
+                    <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                      <div className="text-xs">
+                        <span className="font-bold text-white block">Trazabilidad en este paso:</span>
+                        <span className="text-slate-400">{actual.evidencia}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-4 flex flex-col gap-3">
+                    <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-3">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                        Estado en la Plataforma
+                      </span>
+                      <div className="py-2 px-3 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-bold text-xs">
+                        {actual.estadoPill}
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/80">
+                        <span>Paso {actual.paso} de 6</span>
+                        <button
+                          onClick={() => setPasoFlujoActivo(actual.paso < 6 ? actual.paso + 1 : 1)}
+                          className="text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+                        >
+                          <span>{actual.paso < 6 ? "Siguiente paso" : "Reiniciar flujo"}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* ── SECCIÓN 4: ACCESO RÁPIDO & SIMULADOR 1-CLICK ── */}
+      <section id="acceso" className="py-24 max-w-7xl mx-auto px-6 relative">
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <Badge className="bg-slate-800 text-slate-300 border-slate-700 text-xs font-semibold mb-3">
+            Demo Interactiva
+          </Badge>
+          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+            Probalo ahora según tu rol
+          </h2>
+          <p className="text-slate-400 mt-3 text-sm sm:text-base leading-relaxed">
+            Hacé click en cualquiera de los tres accesos directos para ingresar a la plataforma y explorar la experiencia con datos cargados.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card 1: Cliente */}
+          <Link
+            href="/cliente"
+            className="group rounded-3xl border border-sky-500/20 bg-slate-900/60 p-8 flex flex-col justify-between hover:bg-slate-900 hover:border-sky-500/50 hover:shadow-2xl hover:shadow-sky-500/10 transition-all"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-sky-600/30 mb-6 group-hover:scale-105 transition-transform">
+                <HardHat className="w-6 h-6" />
+              </div>
+              <Badge className="bg-sky-500/10 text-sky-400 border-sky-500/30 text-[10px] mb-2">
+                Rol: Constructora / Obra
+              </Badge>
+              <h3 className="text-xl font-bold text-white group-hover:text-sky-300 transition-colors">
+                Entorno Cliente
+              </h3>
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                Creá solicitudes de materiales para tus obras, revisá presupuestos firmes y contratá electricistas o plomeros con retención escrow.
+              </p>
+            </div>
+            <div className="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-sky-400">
+              <span>Ingresar como Cliente</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          {/* Card 2: Corralón */}
+          <Link
+            href="/productos"
+            className="group rounded-3xl border border-emerald-500/20 bg-slate-900/60 p-8 flex flex-col justify-between hover:bg-slate-900 hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-600/30 mb-6 group-hover:scale-105 transition-transform">
+                <Warehouse className="w-6 h-6" />
+              </div>
+              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] mb-2">
+                Rol: Corralón de Materiales
+              </Badge>
+              <h3 className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+                Entorno InvenTrack
+              </h3>
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                Controlá tu galpón por pasillos y racks 2D, gestioná el stock disponible vs comprometido, pickeá pedidos y generá remitos oficiales con QR.
+              </p>
+            </div>
+            <div className="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-emerald-400">
+              <span>Ingresar a InvenTrack</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          {/* Card 3: Profesionales & Red Vertia */}
+          <Link
+            href="/cliente"
+            className="group rounded-3xl border border-indigo-500/20 bg-slate-900/60 p-8 flex flex-col justify-between hover:bg-slate-900 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all"
+          >
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 mb-6 group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/30 text-[10px] mb-2">
+                Bolsa de Profesionales & Red
+              </Badge>
+              <h3 className="text-xl font-bold text-white group-hover:text-indigo-300 transition-colors">
+                Red Vertia & Profesionales
+              </h3>
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                Bolsa de trabajo para electricistas, sanitaristas y gremios con matrícula. Pedidos coordinados entre corralones y custodia de pagos garantizada.
+              </p>
+            </div>
+            <div className="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-xs font-bold text-indigo-400">
+              <span>Conocer la Red & Gremios</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+        </div>
+      </section>
+
+      {/* ── FOOTER CORPORATIVO ── */}
+      <footer className="border-t border-slate-900 bg-slate-950 py-12 text-slate-500 text-xs">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <VertiaLogo dark className="scale-90 origin-left" />
+
+          <div className="flex items-center gap-6 text-[11px] text-slate-400">
+            <a href="#problema" className="hover:text-white transition-colors">Dolores</a>
+            <a href="#entornos" className="hover:text-white transition-colors">3 Entornos</a>
+            <a href="#flujo" className="hover:text-white transition-colors">Flujo de Solicitud</a>
+            <Link href="/login" className="hover:text-white transition-colors">Iniciar Sesión</Link>
+          </div>
+
+          <div className="text-[11px] text-slate-600">
+            © 2026 VERTIA Network. Arquitectura Serverless Multi-Tenant.
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
